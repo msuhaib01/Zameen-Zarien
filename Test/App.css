@@ -1,42 +1,61 @@
-body {
-  font-family: Arial, sans-serif;
-  margin: 0;
-  padding: 0;
-  background-color: #e0f7fa;
+/* App-wide container */
+.app-container {
+  height: 100vh;
+  width: 100vw;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(to bottom, #87CEEB, #98FB98); /* Nature-themed gradient (sky to grass) */
+  font-family: 'Arial', sans-serif;
+  color: #333;
+  text-align: center;
 }
 
+/* Navbar styles */
 .navbar {
-  background-color: #004d40;
-  color: #ffffff;
-  padding: 10px 20px;
+  width: 100%;
+  background-color: #2E8B57; /* Seagreen background for a nature theme */
+  padding: 1rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
-.navbar ul {
+.navbar-title {
+  font-size: 2rem;
+  color: #fff;
+  margin-left: 1rem;
+}
+
+.navbar-list {
   list-style-type: none;
   display: flex;
-  gap: 20px;
+  margin-right: 2rem;
 }
 
-.navbar a {
-  color: #ffffff;
-  text-decoration: none;
+.navbar-item {
+  margin-left: 1.5rem;
+  color: #fff;
+  font-size: 1.2rem;
+  cursor: pointer;
 }
 
-.content {
-  padding: 20px;
-  text-align: center;
+.navbar-item:hover {
+  text-decoration: underline;
 }
 
-.card {
-  background-color: #ffffff;
-  padding: 20px;
-  border-radius: 10px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  margin-top: 20px;
-  max-width: 400px;
-  margin-left: auto;
-  margin-right: auto;
+/* Main content */
+.main-content {
+  flex-grow: 1;
+  padding: 2rem;
+}
+
+h1 {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+p {
+  font-size: 1.2rem;
 }
