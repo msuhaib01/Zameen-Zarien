@@ -17,9 +17,18 @@ export default function App() {
 
       {/* Homepage Content */}
       <div className="main-content">
-        <h1>KhushAmdeed or sm</h1>
-        <p>some text as well</p>
+        <h1>KhushAmdeed</h1>
+        <p>Welcome to our platform where nature meets technology.</p>
       </div>
+
+      {/* Footer */}
+      <footer className="footer">
+        <p>&copy; 2024 Zameen-Zarien. All rights reserved.</p>
+        <div className="footer-links">
+          <a href="#" className="footer-link">Privacy Policy</a>
+          <a href="#" className="footer-link">Terms of Service</a>
+        </div>
+      </footer>
 
       <StatusBar style="auto" />
     </div>
