@@ -15,6 +15,7 @@ import "../global.css";
 //     </View>
 //   );
 // }
+SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const [fontsLoaded, error] = useFonts({

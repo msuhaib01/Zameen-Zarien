@@ -9,7 +9,7 @@ export default function Index() {
         alignItems: "center",
       }}
     >
-      <Text className="text-emerald-700 text-8xl">ZZ.</Text>
+      <Text className="text-emerald-700 text-8xl font-pbold">ZZ!</Text>
       <Link href="/profile" className="text-blue-800">
         Go to profile
       </Link>
