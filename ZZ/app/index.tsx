@@ -9,9 +9,7 @@ export default function Index() {
         alignItems: "center",
       }}
     >
-      <Text className="text-emerald-700 text-8xl">
-        Edit app/index.tsx to edit this screen.
-      </Text>
+      <Text className="text-emerald-700 text-8xl">ZZ.</Text>
       <Link href="/profile" className="text-blue-800">
         Go to profile
       </Link>
