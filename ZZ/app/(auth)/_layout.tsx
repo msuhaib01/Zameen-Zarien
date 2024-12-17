@@ -1,10 +1,12 @@
-import { View, Text } from "react-native";
+import { View } from "react-native";
 import React from "react";
+import { Slot } from "expo-router";
 
 const AuthLayout = () => {
   return (
-    <View>
-      <Text>AuthLayout</Text>
+    <View className="flex-1">
+      {/* This renders the child route like sign-in.tsx */}
+      <Slot />
     </View>
   );
 };
