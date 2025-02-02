@@ -6,6 +6,8 @@ import BottomHelpBar from '../components/BottomHelpBar';
 import { ScrollView, View, Text, TextInput, TouchableOpacity, Switch } from 'react-native';
 import { Label } from '../components/Label';
 import styled from 'styled-components/native';
+import { useFocusEffect } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const NotificationCard = styled.View`
   background-color: #fff;
@@ -17,16 +19,29 @@ const NotificationCard = styled.View`
 export default function NotificationsScreen({ navigation }) {
   const [search, setSearch] = useState('');
   const [dnd, setDnd] = useState(false);
+  const [isUrdu, setIsUrdu] = useState(true);
   // Sample notifications
   const [notifications] = useState([
     { id:1, title:'گندم کی قیمت میں اضافہ', date:'2024-01-01' },
     { id:2, title:'چاول کی قیمت گر گئی', date:'2024-01-02' }
   ]);
 
+  useFocusEffect(
+    React.useCallback(() => {
+      const fetchLanguagePreference = async () => {
+        const languagePreference = await AsyncStorage.getItem('languagePreference');
+        setIsUrdu(languagePreference === 'urdu');
+      };
+      fetchLanguagePreference();
+    }, [])
+  );
+
+  const getText = (urduText, englishText) => (isUrdu ? urduText : englishText);
+
   return (
     <Container>
       <HeaderBar
-        title="زمین زریں"
+        title={getText("زمین زریں", "Zameen Zarien")}
         onSettingsPress={() => navigation.navigate('Settings')}
       />
 

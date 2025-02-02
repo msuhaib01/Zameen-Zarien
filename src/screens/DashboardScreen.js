@@ -1,11 +1,13 @@
 // src/screens/DashboardScreen.js
-import React from 'react';
+import React, { useState } from 'react';
 import { Container } from '../components/Container';
 import HeaderBar from '../components/HeaderBar';
 import BottomHelpBar from '../components/BottomHelpBar';
 import { ScrollView, View, Text, Image, TouchableOpacity } from 'react-native';
 import { Label } from '../components/Label';
 import styled from 'styled-components/native';
+import { useFocusEffect } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const MetricText = styled.Text`
   color: ${({ theme }) => theme.colors.textDark};
@@ -15,10 +17,24 @@ const MetricText = styled.Text`
 `;
 
 export default function DashboardScreen({ navigation }) {
+  const [isUrdu, setIsUrdu] = useState(true);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      const fetchLanguagePreference = async () => {
+        const languagePreference = await AsyncStorage.getItem('languagePreference');
+        setIsUrdu(languagePreference === 'urdu');
+      };
+      fetchLanguagePreference();
+    }, [])
+  );
+
+  const getText = (urduText, englishText) => (isUrdu ? urduText : englishText);
+
   return (
     <Container>
       <HeaderBar 
-        title="زمین زریں" 
+        title={getText("زمین زریں", "Zameen Zarien")}
         onSettingsPress={() => navigation.navigate('Settings')}
         onNotificationPress={() => navigation.navigate('Notifications')}
       />

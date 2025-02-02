@@ -1,11 +1,12 @@
 // src/screens/AlertsScreen.js
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Container } from '../components/Container';
 import HeaderBar from '../components/HeaderBar';
 import BottomHelpBar from '../components/BottomHelpBar';
 import { ScrollView, View, Text, TouchableOpacity, Switch } from 'react-native';
 import { Label } from '../components/Label';
 import styled from 'styled-components/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const AlertCard = styled.View`
   background-color: #fff;
@@ -15,11 +16,22 @@ const AlertCard = styled.View`
 `;
 
 export default function AlertsScreen({ navigation }) {
-  // Sample state
   const [alerts, setAlerts] = useState([
     { id: 1, commodity: 'گندم', threshold: 205, enabled: true },
     { id: 2, commodity: 'چاول', threshold: 300, enabled: false }
   ]);
+
+  const [isUrdu, setIsUrdu] = useState(true);
+
+  useEffect(() => {
+    const fetchLanguagePreference = async () => {
+      const languagePreference = await AsyncStorage.getItem('languagePreference');
+      setIsUrdu(languagePreference === 'urdu');
+    };
+    fetchLanguagePreference();
+  }, []);
+
+  const getText = (urduText, englishText) => (isUrdu ? urduText : englishText);
 
   const toggleAlert = (id) => {
     setAlerts(alerts.map(a => a.id === id ? {...a, enabled: !a.enabled} : a));
@@ -28,10 +40,13 @@ export default function AlertsScreen({ navigation }) {
   return (
     <Container>
       <HeaderBar
-        title="زمین زریں"
+        title={getText("زمین زریں", "Zameen Zarien")}
         onSettingsPress={() => navigation.navigate('Settings')}
         onNotificationPress={() => navigation.navigate('Notifications')}
       />
+      <TouchableOpacity onPress={() => navigation.goBack()} style={{ padding: 8 }}>
+        <Text style={{ color: '#0C6F38' }}>{getText("واپس", "Back")}</Text>
+      </TouchableOpacity>
 
       <ScrollView contentContainerStyle={{padding:16}}>
         <Label>الرٹس</Label>

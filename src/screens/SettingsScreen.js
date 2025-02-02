@@ -5,16 +5,30 @@ import HeaderBar from '../components/HeaderBar';
 import BottomHelpBar from '../components/BottomHelpBar';
 import { View, Text, TextInput, TouchableOpacity, Switch, Alert } from 'react-native';
 import { Label } from '../components/Label';
+import { useFocusEffect } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function SettingsScreen({ navigation }) {
   const [isUrdu, setIsUrdu] = useState(true);
   const [notifEnabled, setNotifEnabled] = useState(true);
 
-  const handleLanguageToggle = () => {
+  useFocusEffect(
+    React.useCallback(() => {
+      const fetchLanguagePreference = async () => {
+        const languagePreference = await AsyncStorage.getItem('languagePreference');
+        setIsUrdu(languagePreference === 'urdu');
+      };
+      fetchLanguagePreference();
+    }, [])
+  );
+
+  const handleLanguageToggle = async () => {
+    const newLanguage = !isUrdu ? 'urdu' : 'english';
     setIsUrdu(!isUrdu);
+    await AsyncStorage.setItem('languagePreference', newLanguage);
     Alert.alert(
       "Language Changed",
-      `Language has been changed to ${!isUrdu ? 'Urdu' : 'English'}.`
+      `Language has been changed to ${newLanguage === 'urdu' ? 'Urdu' : 'English'}.`
     );
   };
 

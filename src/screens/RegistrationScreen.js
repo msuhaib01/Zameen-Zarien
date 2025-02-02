@@ -1,5 +1,5 @@
 // src/screens/RegistrationScreen.js
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Container } from '../components/Container';
 import HeaderBar from '../components/HeaderBar';
 import { View, TouchableOpacity } from 'react-native';
@@ -9,6 +9,7 @@ import { ActionButton, ActionButtonText } from '../components/ActionButton';
 import BottomHelpBar from '../components/BottomHelpBar';
 import { Ionicons } from '@expo/vector-icons';
 import styled from 'styled-components/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const ProfilePicPlaceholder = styled.View`
   width: 100px;
@@ -26,10 +27,21 @@ export default function RegistrationScreen({ navigation }) {
   const [phone, setPhone] = useState('');
   const [nic, setNic] = useState('');
   const [district, setDistrict] = useState('');
+  const [isUrdu, setIsUrdu] = useState(true);
+
+  useEffect(() => {
+    const fetchLanguagePreference = async () => {
+      const languagePreference = await AsyncStorage.getItem('languagePreference');
+      setIsUrdu(languagePreference === 'urdu');
+    };
+    fetchLanguagePreference();
+  }, []);
+
+  const getText = (urduText, englishText) => (isUrdu ? urduText : englishText);
 
   return (
     <Container>
-      <HeaderBar title="زمین زریں" />
+      <HeaderBar title={getText("زمین زریں", "Zameen Zarien")} />
       
       <View style={{ paddingHorizontal:16 }}>
         <ProfilePicPlaceholder>
@@ -38,23 +50,23 @@ export default function RegistrationScreen({ navigation }) {
           </TouchableOpacity>
         </ProfilePicPlaceholder>
 
-        <Label>* کسان کا نام</Label>
-        <TextInputField value={name} onChangeText={setName} placeholder="مثال: علی خان" />
+        <Label>{getText("* کسان کا نام", "* Farmer's Name")}</Label>
+        <TextInputField value={name} onChangeText={setName} placeholder={getText("مثال: علی خان", "e.g., Ali Khan")} />
 
-        <Label>* موبائل نمبر</Label>
-        <TextInputField value={phone} onChangeText={setPhone} placeholder="03xx xxx xxxx" keyboardType="phone-pad" />
+        <Label>{getText("* موبائل نمبر", "* Mobile Number")}</Label>
+        <TextInputField value={phone} onChangeText={setPhone} placeholder={getText("03xx xxx xxxx", "03xx xxx xxxx")} keyboardType="phone-pad" />
 
-        <Label>شناختی کارڈ نمبر</Label>
-        <TextInputField value={nic} onChangeText={setNic} placeholder="xxxxx-xxxxxxx-x" />
+        <Label>{getText("شناختی کارڈ نمبر", "NIC Number")}</Label>
+        <TextInputField value={nic} onChangeText={setNic} placeholder={getText("xxxxx-xxxxxxx-x", "xxxxx-xxxxxxx-x")} />
 
-        <Label>* ضلع</Label>
-        <TextInputField value={district} onChangeText={setDistrict} placeholder="مثال: لاہور" />
+        <Label>{getText("* ضلع", "* District")}</Label>
+        <TextInputField value={district} onChangeText={setDistrict} placeholder={getText("مثال: لاہور", "e.g., Lahore")} />
 
         <ActionButton onPress={() => navigation.navigate('Dashboard')}>
-          <ActionButtonText>رجسٹر کریں</ActionButtonText>
+          <ActionButtonText>{getText("رجسٹر کریں", "Register")}</ActionButtonText>
         </ActionButton>
 
-        <Label style={{marginTop:16}}>اکاؤنٹ ہے؟ لاگ ان کریں</Label>
+        <Label style={{marginTop:16}}>{getText("اکاؤنٹ ہے؟ لاگ ان کریں", "Already have an account? Log in")}</Label>
       </View>
 
       <BottomHelpBar />

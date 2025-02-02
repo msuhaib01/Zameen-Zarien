@@ -14,7 +14,7 @@ import NotificationsScreen from '../screens/NotificationsScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 
 const Stack = createNativeStackNavigator();
-
+LanguageContext.js
 export default function AppNavigator() {
   return (
     <NavigationContainer>
