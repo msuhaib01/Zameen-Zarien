@@ -1,0 +1,465 @@
+"use client"
+
+import { useState, useEffect } from "react"
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, SafeAreaView } from "react-native"
+import { useTranslation } from "react-i18next"
+import { Ionicons } from "@expo/vector-icons"
+import { LineChart } from "react-native-chart-kit"
+import { Dimensions } from "react-native"
+import Slider from "@react-native-community/slider"
+
+import Header from "../components/Header"
+import Card from "../components/Card"
+import Button from "../components/Button"
+import Dropdown from "../components/Dropdown"
+import { COLORS, FONT, SPACING } from "../theme"
+import { useApp } from "../context/AppContext"
+
+const screenWidth = Dimensions.get("window").width
+
+const SHADOWS = {
+  small: {
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+
+    elevation: 2,
+  },
+  medium: {
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 3,
+    },
+    shadowOpacity: 0.29,
+    shadowRadius: 4.65,
+
+    elevation: 7,
+  },
+  large: {
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 7,
+    },
+    shadowOpacity: 0.41,
+    shadowRadius: 9.11,
+
+    elevation: 14,
+  },
+}
+
+const ForecastScreen = ({ navigation }) => {
+  const { t } = useTranslation()
+  const { commodities, selectedCommodity, setSelectedCommodity, getCommodityData } = useApp()
+
+  const [refreshing, setRefreshing] = useState(false)
+  const [priceData, setPriceData] = useState(null)
+  const [forecastDays, setForecastDays] = useState(7)
+  const [showConfidenceInterval, setShowConfidenceInterval] = useState(true)
+  const [compareWithHistorical, setCompareWithHistorical] = useState(false)
+
+  // Commodity options
+  const commodityOptions = commodities.map((commodity) => ({
+    label: t("common.language") === "en" ? commodity.name : commodity.name_ur,
+    value: commodity.id,
+  }))
+
+  // Load price data when selected commodity changes
+  useEffect(() => {
+    loadPriceData()
+  }, [selectedCommodity])
+
+  // Load price data
+  const loadPriceData = () => {
+    const data = getCommodityData(selectedCommodity)
+    setPriceData(data)
+  }
+
+  // Handle refresh
+  const onRefresh = async () => {
+    setRefreshing(true)
+    // In a real app, you would fetch fresh data here
+    await new Promise((resolve) => setTimeout(resolve, 1000))
+    loadPriceData()
+    setRefreshing(false)
+  }
+
+  // Prepare chart data
+  const getChartData = () => {
+    if (!priceData || !priceData.forecast) return null
+
+    // Get forecast data based on selected days
+    const forecastData = priceData.forecast.slice(0, forecastDays)
+
+    // Prepare datasets
+    const datasets = [
+      {
+        data: forecastData.map((item) => item.price),
+        color: (opacity = 1) => `rgba(0, 100, 0, ${opacity})`, // Dark green
+        strokeWidth: 2,
+      },
+    ]
+
+    // Add confidence intervals if enabled
+    if (showConfidenceInterval) {
+      // Upper confidence bound
+      datasets.push({
+        data: forecastData.map((item) => item.confidence[1]),
+        color: (opacity = 0.5) => `rgba(0, 100, 0, ${opacity})`, // Lighter green
+        strokeWidth: 1,
+        withDots: false,
+      })
+
+      // Lower confidence bound
+      datasets.push({
+        data: forecastData.map((item) => item.confidence[0]),
+        color: (opacity = 0.5) => `rgba(0, 100, 0, ${opacity})`, // Lighter green
+        strokeWidth: 1,
+        withDots: false,
+      })
+    }
+
+    // Add historical data if enabled
+    if (compareWithHistorical && priceData.history) {
+      const historicalData = priceData.history.slice(-forecastDays)
+      datasets.push({
+        data: historicalData.map((item) => item.price),
+        color: (opacity = 1) => `rgba(139, 0, 0, ${opacity})`, // Dark red
+        strokeWidth: 2,
+      })
+    }
+
+    return {
+      labels: forecastData.map((item) => {
+        const date = new Date(item.date)
+        return `${date.getDate()}/${date.getMonth() + 1}`
+      }),
+      datasets,
+      legend: [
+        t("forecast.predictedPrice"),
+        ...(showConfidenceInterval ? [t("forecast.confidenceInterval")] : []),
+        ...(compareWithHistorical ? [t("historical.title")] : []),
+      ],
+    }
+  }
+
+  // Chart configuration
+  const chartConfig = {
+    backgroundGradientFrom: COLORS.white,
+    backgroundGradientTo: COLORS.white,
+    decimalPlaces: 0,
+    color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+    labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+    style: {
+      borderRadius: 16,
+    },
+    propsForDots: {
+      r: "6",
+      strokeWidth: "2",
+      stroke: COLORS.primary,
+    },
+  }
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <Header title={t("forecast.title")} showBackButton={true} />
+
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      >
+        <View style={styles.filtersContainer}>
+          <Dropdown
+            label={t("dashboard.commodity")}
+            data={commodityOptions}
+            value={selectedCommodity}
+            onSelect={setSelectedCommodity}
+            style={styles.dropdown}
+          />
+        </View>
+
+        {priceData ? (
+          <>
+            <Card style={styles.forecastCard}>
+              <Text style={styles.cardTitle}>
+                {t("common.language") === "en"
+                  ? commodities.find((c) => c.id === selectedCommodity)?.name
+                  : commodities.find((c) => c.id === selectedCommodity)?.name_ur}
+              </Text>
+
+              <View style={styles.forecastDurationContainer}>
+                <Text style={styles.forecastDurationLabel}>
+                  {t("forecast.forecastDuration")}: {forecastDays} {t("forecast.days")}
+                </Text>
+                <Slider
+                  style={styles.slider}
+                  minimumValue={1}
+                  maximumValue={7}
+                  step={1}
+                  value={forecastDays}
+                  onValueChange={setForecastDays}
+                  minimumTrackTintColor={COLORS.primary}
+                  maximumTrackTintColor={COLORS.lightGray}
+                  thumbTintColor={COLORS.primary}
+                />
+              </View>
+
+              <View style={styles.optionsContainer}>
+                <TouchableOpacity
+                  style={styles.optionButton}
+                  onPress={() => setShowConfidenceInterval(!showConfidenceInterval)}
+                >
+                  <Ionicons
+                    name={showConfidenceInterval ? "checkbox" : "square-outline"}
+                    size={24}
+                    color={COLORS.primary}
+                  />
+                  <Text style={styles.optionText}>{t("forecast.showConfidenceInterval")}</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.optionButton}
+                  onPress={() => setCompareWithHistorical(!compareWithHistorical)}
+                >
+                  <Ionicons
+                    name={compareWithHistorical ? "checkbox" : "square-outline"}
+                    size={24}
+                    color={COLORS.primary}
+                  />
+                  <Text style={styles.optionText}>{t("forecast.compareHistorical")}</Text>
+                </TouchableOpacity>
+              </View>
+            </Card>
+
+            <Card style={styles.chartCard}>
+              <Text style={styles.chartTitle}>{t("forecast.predictedPrice")}</Text>
+
+              {getChartData() && (
+                <LineChart
+                  data={getChartData()}
+                  width={screenWidth - 40}
+                  height={220}
+                  chartConfig={chartConfig}
+                  bezier
+                  style={styles.chart}
+                />
+              )}
+
+              <View style={styles.legendContainer}>
+                <View style={styles.legendItem}>
+                  <View style={[styles.legendColor, { backgroundColor: COLORS.primary }]} />
+                  <Text style={styles.legendText}>{t("forecast.predictedPrice")}</Text>
+                </View>
+
+                {showConfidenceInterval && (
+                  <View style={styles.legendItem}>
+                    <View style={[styles.legendColor, { backgroundColor: COLORS.primary, opacity: 0.5 }]} />
+                    <Text style={styles.legendText}>{t("forecast.confidenceInterval")}</Text>
+                  </View>
+                )}
+
+                {compareWithHistorical && (
+                  <View style={styles.legendItem}>
+                    <View style={[styles.legendColor, { backgroundColor: COLORS.accent }]} />
+                    <Text style={styles.legendText}>{t("historical.title")}</Text>
+                  </View>
+                )}
+              </View>
+            </Card>
+
+            <View style={styles.forecastDetailsCard}>
+              <Text style={styles.forecastDetailsTitle}>{t("forecast.forecastDetails")}</Text>
+
+              <View style={styles.forecastDetailsTable}>
+                <View style={styles.tableHeader}>
+                  <Text style={styles.tableHeaderCell}>{t("common.date")}</Text>
+                  <Text style={styles.tableHeaderCell}>{t("forecast.predictedPrice")}</Text>
+                  <Text style={styles.tableHeaderCell}>{t("forecast.confidenceMin")}</Text>
+                  <Text style={styles.tableHeaderCell}>{t("forecast.confidenceMax")}</Text>
+                </View>
+
+                {priceData.forecast.slice(0, forecastDays).map((item, index) => (
+                  <View key={index} style={styles.tableRow}>
+                    <Text style={styles.tableCell}>{new Date(item.date).toLocaleDateString()}</Text>
+                    <Text style={styles.tableCell}>PKR {item.price}</Text>
+                    <Text style={styles.tableCell}>PKR {item.confidence[0]}</Text>
+                    <Text style={styles.tableCell}>PKR {item.confidence[1]}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+
+            <Button
+              title={t("forecast.downloadReport")}
+              onPress={() => {
+                /* Handle download report */
+              }}
+              type="primary"
+              icon={<Ionicons name="download-outline" size={18} color={COLORS.white} style={styles.buttonIcon} />}
+              style={styles.downloadButton}
+            />
+          </>
+        ) : (
+          <View style={styles.loadingContainer}>
+            <Text style={styles.loadingText}>{t("common.loading")}</Text>
+          </View>
+        )}
+      </ScrollView>
+    </SafeAreaView>
+  )
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: COLORS.background.primary,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    padding: SPACING.large,
+  },
+  filtersContainer: {
+    marginBottom: SPACING.medium,
+  },
+  dropdown: {
+    marginBottom: SPACING.medium,
+  },
+  forecastCard: {
+    marginBottom: SPACING.large,
+  },
+  cardTitle: {
+    fontSize: FONT.sizes.xl,
+    fontWeight: "bold",
+    marginBottom: SPACING.medium,
+    textAlign: "center",
+    color: COLORS.text.primary,
+  },
+  forecastDurationContainer: {
+    marginBottom: SPACING.large,
+  },
+  forecastDurationLabel: {
+    fontSize: FONT.sizes.medium,
+    color: COLORS.text.primary,
+    marginBottom: SPACING.small,
+  },
+  slider: {
+    width: "100%",
+    height: 40,
+  },
+  optionsContainer: {
+    marginBottom: SPACING.medium,
+  },
+  optionButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: SPACING.small,
+  },
+  optionText: {
+    marginLeft: SPACING.small,
+    fontSize: FONT.sizes.medium,
+    color: COLORS.text.primary,
+  },
+  chartCard: {
+    marginBottom: SPACING.large,
+  },
+  chartTitle: {
+    fontSize: FONT.sizes.large,
+    fontWeight: "bold",
+    marginBottom: SPACING.medium,
+    color: COLORS.text.primary,
+  },
+  chart: {
+    marginVertical: SPACING.medium,
+    borderRadius: 16,
+  },
+  legendContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    marginTop: SPACING.small,
+  },
+  legendItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginRight: SPACING.large,
+    marginBottom: SPACING.small,
+  },
+  legendColor: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    marginRight: SPACING.small,
+  },
+  legendText: {
+    fontSize: FONT.sizes.small,
+    color: COLORS.text.secondary,
+  },
+  forecastDetailsCard: {
+    backgroundColor: COLORS.white,
+    borderRadius: 10,
+    padding: SPACING.large,
+    marginBottom: SPACING.large,
+    ...SHADOWS.medium,
+  },
+  forecastDetailsTitle: {
+    fontSize: FONT.sizes.large,
+    fontWeight: "bold",
+    marginBottom: SPACING.medium,
+    color: COLORS.text.primary,
+  },
+  forecastDetailsTable: {
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 8,
+  },
+  tableHeader: {
+    flexDirection: "row",
+    backgroundColor: COLORS.background.tertiary,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+    paddingVertical: SPACING.small,
+  },
+  tableHeaderCell: {
+    flex: 1,
+    fontWeight: "bold",
+    textAlign: "center",
+    color: COLORS.text.primary,
+    fontSize: FONT.sizes.small,
+  },
+  tableRow: {
+    flexDirection: "row",
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+    paddingVertical: SPACING.small,
+  },
+  tableCell: {
+    flex: 1,
+    textAlign: "center",
+    color: COLORS.text.primary,
+    fontSize: FONT.sizes.small,
+  },
+  downloadButton: {
+    marginBottom: SPACING.large,
+  },
+  buttonIcon: {
+    marginRight: SPACING.small,
+  },
+  loadingContainer: {
+    padding: SPACING.xxl,
+    alignItems: "center",
+  },
+  loadingText: {
+    fontSize: FONT.sizes.large,
+    color: COLORS.text.secondary,
+  },
+})
+
+export default ForecastScreen
+
