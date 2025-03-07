@@ -137,12 +137,31 @@ const HistoricalDataScreen = ({ navigation }) => {
 
       const color = colors[index % colors.length]
 
+      // Convert hex color to rgba
+      const hexToRgba = (hex, opacity) => {
+        // Remove the hash
+        const cleanHex = hex.replace("#", "")
+
+        // Parse the hex values
+        const r = Number.parseInt(cleanHex.substring(0, 2), 16)
+        const g = Number.parseInt(cleanHex.substring(2, 4), 16)
+        const b = Number.parseInt(cleanHex.substring(4, 6), 16)
+
+        // Return rgba
+        return `rgba(${r}, ${g}, ${b}, ${opacity})`
+      }
+
       return {
         data: filteredData.map((item) => item.price),
-        color: (opacity = 1) => `rgba(${color.replace(/[^\d,]/g, "")}, ${opacity})`,
+        color: (opacity = 1) => hexToRgba(color, opacity),
         strokeWidth: 2,
         label: t("common.language") === "en" ? commodity.name : commodity.name_ur,
       }
+    })
+
+    // Ensure all price values are valid numbers
+    datasets.forEach((dataset) => {
+      dataset.data = dataset.data.map((price) => (typeof price === "number" && isFinite(price) ? price : 0))
     })
 
     // Get labels (dates) from the first dataset
@@ -177,6 +196,8 @@ const HistoricalDataScreen = ({ navigation }) => {
       strokeWidth: "2",
       stroke: COLORS.primary,
     },
+    formatYLabel: (value) => Math.round(value).toString(),
+    formatXLabel: (value) => value.toString(),
   }
 
   // Handle date change
