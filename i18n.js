@@ -150,6 +150,12 @@ const enTranslations = {
     lineChart: "Line Chart",
     barChart: "Bar Chart",
     exportData: "Export Data",
+    exportSuccess: "Data exported successfully",
+    noDataAvailable: "No data available for the selected period",
+    insufficientDataPoints: "Not enough data points to display chart",
+    chartRenderingError: "Error rendering chart. Please try again.",
+    period: "Period",
+    customChartView: "Chart data displayed as table for better compatibility",
   },
   notifications: {
     title: "Notifications",
@@ -220,6 +226,9 @@ const enTranslations = {
   },
   errors: {
     general: "Something went wrong. Please try again.",
+    chartLoading: "Error loading chart. Please try again.",
+    dataFetch: "Error fetching data. Please check your connection and try again.",
+    invalidData: "Invalid data received. Please try again later.",
   },
 }
 
@@ -358,19 +367,24 @@ const urTranslations = {
     weekly: "ہفتہ وار",
     monthly: "ماہانہ",
     yearly: "سالانہ",
-    compareCommodities: "فصلوں کا موازنہ کریں",
+    compareCommodities: "اجناس کا موازنہ کریں",
     dateRange: "تاریخ کی حد",
     from: "سے",
     to: "تک",
     timeRange: "وقت کی حد",
     priceHistory: "قیمت کی تاریخ",
-    multipleCommodities: "متعدد فصلیں",
+    multipleCommodities: "متعدد اجناس",
     statistics: "شماریات",
     chartType: "چارٹ کی قسم",
     lineChart: "لائن چارٹ",
     barChart: "بار چارٹ",
     exportData: "ڈیٹا برآمد کریں",
+    exportSuccess: "ڈیٹا کامیابی سے برآمد ہو گیا",
+    noDataAvailable: "منتخب مدت کے لیے کوئی ڈیٹا دستیاب نہیں ہے",
+    insufficientDataPoints: "چارٹ دکھانے کے لیے کافی ڈیٹا پوائنٹس نہیں ہیں",
+    chartRenderingError: "چارٹ رینڈرنگ میں خرابی۔ براہ کرم دوبارہ کوشش کریں۔",
     period: "مدت",
+    customChartView: "بہتر مطابقت کے لیے چارٹ کا ڈیٹا ٹیبل کی شکل میں دکھایا گیا ہے",
   },
   notifications: {
     title: "نوٹیفیکیشنز",
@@ -440,7 +454,10 @@ const urTranslations = {
     termsRequired: "آپ کو شرائط و ضوابط سے متفق ہونا ضروری ہے",
   },
   errors: {
-    general: "کچھ غلط ہو گیا۔ براہ کرم دوبارہ کوشش کریں۔",
+    general: "کچھ غلط ہو گیا ہے۔ براہ کرم دوبارہ کوشش کریں۔",
+    chartLoading: "چارٹ لوڈ کرنے میں خرابی۔ براہ کرم دوبارہ کوشش کریں۔",
+    dataFetch: "ڈیٹا حاصل کرنے میں خرابی۔ براہ کرم اپنے کنکشن کی جانچ کریں اور دوبارہ کوشش کریں۔",
+    invalidData: "غلط ڈیٹا موصول ہوا۔ براہ کرم بعد میں دوبارہ کوشش کریں۔",
   },
 }
 

@@ -1,5 +1,5 @@
-import { TouchableOpacity, Text, StyleSheet, ActivityIndicator } from "react-native"
-import { COLORS, SPACING, SHADOWS } from "../theme"
+import { TouchableOpacity, Text, StyleSheet, ActivityIndicator, Platform, View } from "react-native"
+import { COLORS, SPACING, SHADOWS, FONT } from "../theme"
 
 const Button = ({
   title,
@@ -64,13 +64,14 @@ const Button = ({
       style={[styles.button, getButtonStyle(), getSizeStyle(), disabled && styles.disabledButton, style]}
       onPress={onPress}
       disabled={disabled || loading}
+      activeOpacity={0.7}
     >
       {loading ? (
-        <ActivityIndicator color={type === "outline" ? COLORS.primary : COLORS.white} />
+        <ActivityIndicator color={type === "outline" ? COLORS.primary : COLORS.white} size="small" />
       ) : (
         <>
-          {icon && icon}
-          <Text style={[styles.text, getTextStyle(), disabled && styles.disabledText, textStyle]}>{title}</Text>
+          {icon && <View style={styles.iconContainer}>{icon}</View>}
+          <Text style={[styles.text, getTextStyle(), disabled && styles.disabledText, textStyle]} numberOfLines={1} ellipsizeMode="tail">{title}</Text>
         </>
       )}
     </TouchableOpacity>
@@ -83,11 +84,21 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 8,
-    ...SHADOWS.small,
+    ...(Platform.OS === 'ios' ? SHADOWS.small : { 
+      elevation: 2,
+      shadowColor: "#000",
+    }),
+    overflow: 'hidden', // Fix for Android ripple effect
   },
   text: {
     fontWeight: "bold",
     textAlign: "center",
+    fontSize: FONT.sizes.medium,
+  },
+  iconContainer: {
+    marginRight: SPACING.small,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   // Button types
   primaryButton: {
@@ -127,16 +138,19 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.xs,
     paddingHorizontal: SPACING.medium,
     minWidth: 80,
+    minHeight: 32,
   },
   mediumButton: {
     paddingVertical: SPACING.medium,
     paddingHorizontal: SPACING.large,
     minWidth: 120,
+    minHeight: 40,
   },
   largeButton: {
     paddingVertical: SPACING.large,
     paddingHorizontal: SPACING.xl,
     minWidth: 160,
+    minHeight: 48,
   },
   // Disabled state
   disabledButton: {

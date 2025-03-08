@@ -10,17 +10,18 @@ import {
   RefreshControl,
   SafeAreaView,
   Platform,
+  ActivityIndicator,
+  Dimensions,
 } from "react-native"
 import { useTranslation } from "react-i18next"
 import { Ionicons } from "@expo/vector-icons"
-import { LineChart, BarChart } from "react-native-chart-kit"
-import { Dimensions } from "react-native"
 import DateTimePicker from "@react-native-community/datetimepicker"
 
 import Header from "../components/Header"
 import Card from "../components/Card"
 import Button from "../components/Button"
 import Dropdown from "../components/Dropdown"
+import ChartWrapper from "../components/ChartWrapper"
 import { COLORS, FONT, SPACING, SHADOWS } from "../theme"
 import { useApp } from "../context/AppContext"
 
@@ -40,6 +41,7 @@ const HistoricalDataScreen = ({ navigation }) => {
   const [showEndDatePicker, setShowEndDatePicker] = useState(false)
   const [compareCommodities, setCompareCommodities] = useState(false)
   const [selectedCommodities, setSelectedCommodities] = useState([selectedCommodity])
+  const [isWebPlatform, setIsWebPlatform] = useState(Platform.OS === 'web')
 
   // Chart type options
   const chartTypeOptions = [
@@ -60,26 +62,44 @@ const HistoricalDataScreen = ({ navigation }) => {
     value: commodity.id,
   }))
 
+  // Determine platform on mount
+  useEffect(() => {
+    setIsWebPlatform(Platform.OS === 'web')
+  }, [])
+
   // Load price data when selected commodity changes
   useEffect(() => {
-    loadPriceData()
+    try {
+      loadPriceData()
+    } catch (error) {
+      console.error("Error loading price data:", error)
+    }
   }, [selectedCommodity, timeRange, startDate, endDate])
 
   // Update selected commodities when toggling compare mode
   useEffect(() => {
-    if (compareCommodities) {
-      if (!selectedCommodities.includes(selectedCommodity)) {
-        setSelectedCommodities([...selectedCommodities, selectedCommodity])
+    try {
+      if (compareCommodities) {
+        if (!selectedCommodities.includes(selectedCommodity)) {
+          setSelectedCommodities([...selectedCommodities, selectedCommodity])
+        }
+      } else {
+        setSelectedCommodities([selectedCommodity])
       }
-    } else {
-      setSelectedCommodities([selectedCommodity])
+    } catch (error) {
+      console.error("Error updating selected commodities:", error)
     }
   }, [compareCommodities, selectedCommodity])
 
   // Load price data
   const loadPriceData = () => {
-    const data = getCommodityData(selectedCommodity)
-    setPriceData(data)
+    try {
+      const data = getCommodityData(selectedCommodity)
+      setPriceData(data)
+    } catch (error) {
+      console.error("Error in loadPriceData:", error)
+      setPriceData(null)
+    }
   }
 
   // Handle refresh
@@ -105,79 +125,113 @@ const HistoricalDataScreen = ({ navigation }) => {
 
   // Get filtered historical data based on date range
   const getFilteredHistoricalData = (commodityId) => {
-    const data = getCommodityData(commodityId)
-    if (!data || !data.history) return []
+    try {
+      const data = getCommodityData(commodityId)
+      if (!data || !data.history) return []
 
-    const startTimestamp = startDate.getTime()
-    const endTimestamp = endDate.getTime()
+      const startTimestamp = startDate.getTime()
+      const endTimestamp = endDate.getTime()
 
-    return data.history.filter((item) => {
-      const itemDate = new Date(item.date).getTime()
-      return itemDate >= startTimestamp && itemDate <= endTimestamp
-    })
+      return data.history.filter((item) => {
+        const itemDate = new Date(item.date).getTime()
+        return itemDate >= startTimestamp && itemDate <= endTimestamp
+      })
+    } catch (error) {
+      console.error("Error in getFilteredHistoricalData:", error)
+      return []
+    }
   }
 
   // Prepare chart data
   const getChartData = () => {
-    if (!priceData || !priceData.history) return null
+    try {
+      if (!priceData || !priceData.history) return null
 
-    // Get data for all selected commodities
-    const datasets = selectedCommodities.map((commodityId, index) => {
-      const filteredData = getFilteredHistoricalData(commodityId)
-      const commodity = commodities.find((c) => c.id === commodityId)
+      // Get data for all selected commodities
+      const datasets = selectedCommodities.map((commodityId, index) => {
+        const filteredData = getFilteredHistoricalData(commodityId)
+        if (!filteredData || filteredData.length === 0) return null
+        
+        const commodity = commodities.find((c) => c.id === commodityId)
+        if (!commodity) return null
 
-      // Generate a color based on index
-      const colors = [
-        COLORS.primary,
-        COLORS.accent,
-        "#2E8B57", // Sea green
-        "#4682B4", // Steel blue
-        "#8B4513", // Saddle brown
-      ]
+        // Generate a color based on index
+        const colors = [
+          COLORS.primary,
+          COLORS.accent,
+          "#2E8B57", // Sea green
+          "#4682B4", // Steel blue
+          "#8B4513", // Saddle brown
+        ]
 
-      const color = colors[index % colors.length]
+        const color = colors[index % colors.length]
 
-      // Convert hex color to rgba
-      const hexToRgba = (hex, opacity) => {
-        // Remove the hash
-        const cleanHex = hex.replace("#", "")
+        // Convert hex color to rgba
+        const hexToRgba = (hex, opacity) => {
+          try {
+            // Remove the hash
+            const cleanHex = hex.replace("#", "")
 
-        // Parse the hex values
-        const r = Number.parseInt(cleanHex.substring(0, 2), 16)
-        const g = Number.parseInt(cleanHex.substring(2, 4), 16)
-        const b = Number.parseInt(cleanHex.substring(4, 6), 16)
+            // Parse the hex values
+            const r = Number.parseInt(cleanHex.substring(0, 2), 16)
+            const g = Number.parseInt(cleanHex.substring(2, 4), 16)
+            const b = Number.parseInt(cleanHex.substring(4, 6), 16)
 
-        // Return rgba
-        return `rgba(${r}, ${g}, ${b}, ${opacity})`
-      }
+            // Return rgba
+            return `rgba(${r}, ${g}, ${b}, ${opacity})`
+          } catch (error) {
+            console.error("Error in hexToRgba:", error)
+            return `rgba(0, 0, 0, ${opacity})`
+          }
+        }
+
+        return {
+          data: filteredData.map((item) => {
+            // Ensure price is a valid number
+            const price = item.price
+            return typeof price === "number" && isFinite(price) ? price : 0
+          }),
+          color: (opacity = 1) => hexToRgba(color, opacity),
+          strokeWidth: 2,
+          label: t("common.language") === "en" ? commodity.name : commodity.name_ur,
+        }
+      }).filter(Boolean) // Remove null datasets
+      
+      if (datasets.length === 0) return null
+
+      // Ensure all price values are valid numbers
+      datasets.forEach((dataset) => {
+        dataset.data = dataset.data.map((price) => (typeof price === "number" && isFinite(price) ? price : 0))
+      })
+
+      // Get labels (dates) from the first dataset
+      const firstDataset = getFilteredHistoricalData(selectedCommodities[0])
+      if (!firstDataset || firstDataset.length === 0) return null
+      
+      const labels = firstDataset.map((item) => {
+        try {
+          const date = new Date(item.date)
+          return `${date.getDate()}/${date.getMonth() + 1}`
+        } catch (error) {
+          console.error("Error creating date label:", error)
+          return ""
+        }
+      })
 
       return {
-        data: filteredData.map((item) => item.price),
-        color: (opacity = 1) => hexToRgba(color, opacity),
-        strokeWidth: 2,
-        label: t("common.language") === "en" ? commodity.name : commodity.name_ur,
+        labels,
+        datasets,
+        legend: selectedCommodities
+          .map((commodityId) => {
+            const commodity = commodities.find((c) => c.id === commodityId)
+            if (!commodity) return null
+            return t("common.language") === "en" ? commodity.name : commodity.name_ur
+          })
+          .filter(Boolean),
       }
-    })
-
-    // Ensure all price values are valid numbers
-    datasets.forEach((dataset) => {
-      dataset.data = dataset.data.map((price) => (typeof price === "number" && isFinite(price) ? price : 0))
-    })
-
-    // Get labels (dates) from the first dataset
-    const firstDataset = getFilteredHistoricalData(selectedCommodities[0])
-    const labels = firstDataset.map((item) => {
-      const date = new Date(item.date)
-      return `${date.getDate()}/${date.getMonth() + 1}`
-    })
-
-    return {
-      labels,
-      datasets,
-      legend: selectedCommodities.map((commodityId) => {
-        const commodity = commodities.find((c) => c.id === commodityId)
-        return t("common.language") === "en" ? commodity.name : commodity.name_ur
-      }),
+    } catch (error) {
+      console.error("Error in getChartData:", error)
+      return null
     }
   }
 
@@ -196,8 +250,22 @@ const HistoricalDataScreen = ({ navigation }) => {
       strokeWidth: "2",
       stroke: COLORS.primary,
     },
-    formatYLabel: (value) => Math.round(value).toString(),
-    formatXLabel: (value) => value.toString(),
+    formatYLabel: (value) => {
+      try {
+        return Math.round(value).toString()
+      } catch (error) {
+        console.error("Error in formatYLabel:", error)
+        return "0"
+      }
+    },
+    formatXLabel: (value) => {
+      try {
+        return value.toString()
+      } catch (error) {
+        console.error("Error in formatXLabel:", error)
+        return ""
+      }
+    },
   }
 
   // Handle date change
@@ -224,6 +292,55 @@ const HistoricalDataScreen = ({ navigation }) => {
     alert(t("historical.exportSuccess"))
   }
 
+  // Rendering helper - safely render chart
+  const renderChart = () => {
+    try {
+      const chartData = getChartData()
+      
+      if (!chartData || !chartData.datasets || chartData.datasets.length === 0 || 
+          !chartData.labels || chartData.labels.length === 0) {
+        return (
+          <View style={styles.noDataContainer}>
+            <Text style={styles.noDataText}>{t("historical.noDataAvailable")}</Text>
+          </View>
+        )
+      }
+
+      // Check for minimum data points
+      const hasEnoughData = chartData.datasets.every(dataset => dataset.data.length >= 2)
+      if (!hasEnoughData) {
+        return (
+          <View style={styles.noDataContainer}>
+            <Text style={styles.noDataText}>{t("historical.insufficientDataPoints")}</Text>
+          </View>
+        )
+      }
+      
+      // Make sure we're not running into width issues
+      const chartWidth = Math.min(screenWidth - 40, 1000)
+      
+      // Use the ChartWrapper component
+      return (
+        <ChartWrapper
+          data={chartData}
+          chartType={chartType}
+          width={chartWidth}
+          height={220}
+          chartConfig={chartConfig}
+          style={styles.chart}
+          onError={(error) => console.error("Chart error:", error)}
+        />
+      )
+    } catch (error) {
+      console.error("Error rendering chart:", error)
+      return (
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>{t("historical.chartRenderingError")}</Text>
+        </View>
+      )
+    }
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <Header title={t("historical.title")} showBackButton={true} />
@@ -232,6 +349,7 @@ const HistoricalDataScreen = ({ navigation }) => {
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        showsVerticalScrollIndicator={false}
       >
         <View style={styles.filtersContainer}>
           <Dropdown
@@ -349,58 +467,43 @@ const HistoricalDataScreen = ({ navigation }) => {
                 : t("historical.multipleCommodities")}
             </Text>
 
-            {getChartData() && chartType === "line" && (
-              <LineChart
-                data={getChartData()}
-                width={screenWidth - 40}
-                height={220}
-                chartConfig={chartConfig}
-                bezier
-                style={styles.chart}
-                fromZero
-                yAxisSuffix=" PKR"
-              />
-            )}
-
-            {getChartData() && chartType === "bar" && (
-              <BarChart
-                data={getChartData()}
-                width={screenWidth - 40}
-                height={220}
-                chartConfig={chartConfig}
-                style={styles.chart}
-                fromZero
-                yAxisSuffix=" PKR"
-              />
-            )}
+            {renderChart()}
 
             <View style={styles.legendContainer}>
               {selectedCommodities.map((commodityId, index) => {
-                const commodity = commodities.find((c) => c.id === commodityId)
-                // Generate a color based on index
-                const colors = [
-                  COLORS.primary,
-                  COLORS.accent,
-                  "#2E8B57", // Sea green
-                  "#4682B4", // Steel blue
-                  "#8B4513", // Saddle brown
-                ]
+                try {
+                  const commodity = commodities.find((c) => c.id === commodityId)
+                  if (!commodity) return null
+                  
+                  // Generate a color based on index
+                  const colors = [
+                    COLORS.primary,
+                    COLORS.accent,
+                    "#2E8B57", // Sea green
+                    "#4682B4", // Steel blue
+                    "#8B4513", // Saddle brown
+                  ]
 
-                const color = colors[index % colors.length]
+                  const color = colors[index % colors.length]
 
-                return (
-                  <View key={commodityId} style={styles.legendItem}>
-                    <View style={[styles.legendColor, { backgroundColor: color }]} />
-                    <Text style={styles.legendText}>
-                      {t("common.language") === "en" ? commodity.name : commodity.name_ur}
-                    </Text>
-                  </View>
-                )
-              })}
+                  return (
+                    <View key={commodityId} style={styles.legendItem}>
+                      <View style={[styles.legendColor, { backgroundColor: color }]} />
+                      <Text style={styles.legendText}>
+                        {t("common.language") === "en" ? commodity.name : commodity.name_ur}
+                      </Text>
+                    </View>
+                  )
+                } catch (error) {
+                  console.error("Error rendering legend item:", error)
+                  return null
+                }
+              }).filter(Boolean)}
             </View>
           </Card>
         ) : (
           <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={COLORS.primary} />
             <Text style={styles.loadingText}>{t("common.loading")}</Text>
           </View>
         )}
@@ -408,39 +511,41 @@ const HistoricalDataScreen = ({ navigation }) => {
         <View style={styles.statsCard}>
           <Text style={styles.statsTitle}>{t("historical.statistics")}</Text>
 
-          <View style={styles.statsTable}>
-            <View style={styles.tableHeader}>
-              <Text style={styles.tableHeaderCell}>{t("historical.period")}</Text>
-              <Text style={styles.tableHeaderCell}>{t("dashboard.averagePrice")}</Text>
-              <Text style={styles.tableHeaderCell}>{t("dashboard.highestPrice")}</Text>
-              <Text style={styles.tableHeaderCell}>{t("dashboard.lowestPrice")}</Text>
-            </View>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tableScrollContainer}>
+            <View style={styles.statsTable}>
+              <View style={styles.tableHeader}>
+                <Text style={styles.tableHeaderCell}>{t("historical.period")}</Text>
+                <Text style={styles.tableHeaderCell}>{t("dashboard.averagePrice")}</Text>
+                <Text style={styles.tableHeaderCell}>{t("dashboard.highestPrice")}</Text>
+                <Text style={styles.tableHeaderCell}>{t("dashboard.lowestPrice")}</Text>
+              </View>
 
-            <View style={styles.tableRow}>
-              <Text style={styles.tableCell}>{t("historical.weekly")}</Text>
-              <Text style={styles.tableCell}>PKR {priceData?.average || "-"}</Text>
-              <Text style={styles.tableCell}>PKR {priceData?.highest || "-"}</Text>
-              <Text style={styles.tableCell}>PKR {priceData?.lowest || "-"}</Text>
-            </View>
+              <View style={styles.tableRow}>
+                <Text style={styles.tableCell}>{t("historical.weekly")}</Text>
+                <Text style={styles.tableCell}>PKR {priceData?.average || "-"}</Text>
+                <Text style={styles.tableCell}>PKR {priceData?.highest || "-"}</Text>
+                <Text style={styles.tableCell}>PKR {priceData?.lowest || "-"}</Text>
+              </View>
 
-            <View style={styles.tableRow}>
-              <Text style={styles.tableCell}>{t("historical.monthly")}</Text>
-              <Text style={styles.tableCell}>
-                PKR {priceData?.average ? Math.round(priceData.average * 0.98) : "-"}
-              </Text>
-              <Text style={styles.tableCell}>
-                PKR {priceData?.highest ? Math.round(priceData.highest * 1.02) : "-"}
-              </Text>
-              <Text style={styles.tableCell}>PKR {priceData?.lowest ? Math.round(priceData.lowest * 0.95) : "-"}</Text>
-            </View>
+              <View style={styles.tableRow}>
+                <Text style={styles.tableCell}>{t("historical.monthly")}</Text>
+                <Text style={styles.tableCell}>
+                  PKR {priceData?.average ? Math.round(priceData.average * 0.98) : "-"}
+                </Text>
+                <Text style={styles.tableCell}>
+                  PKR {priceData?.highest ? Math.round(priceData.highest * 1.02) : "-"}
+                </Text>
+                <Text style={styles.tableCell}>PKR {priceData?.lowest ? Math.round(priceData.lowest * 0.95) : "-"}</Text>
+              </View>
 
-            <View style={styles.tableRow}>
-              <Text style={styles.tableCell}>{t("historical.yearly")}</Text>
-              <Text style={styles.tableCell}>PKR {priceData?.average ? Math.round(priceData.average * 0.9) : "-"}</Text>
-              <Text style={styles.tableCell}>PKR {priceData?.highest ? Math.round(priceData.highest * 1.1) : "-"}</Text>
-              <Text style={styles.tableCell}>PKR {priceData?.lowest ? Math.round(priceData.lowest * 0.85) : "-"}</Text>
+              <View style={styles.tableRow}>
+                <Text style={styles.tableCell}>{t("historical.yearly")}</Text>
+                <Text style={styles.tableCell}>PKR {priceData?.average ? Math.round(priceData.average * 0.9) : "-"}</Text>
+                <Text style={styles.tableCell}>PKR {priceData?.highest ? Math.round(priceData.highest * 1.1) : "-"}</Text>
+                <Text style={styles.tableCell}>PKR {priceData?.lowest ? Math.round(priceData.lowest * 0.85) : "-"}</Text>
+              </View>
             </View>
-          </View>
+          </ScrollView>
         </View>
 
         <Button
@@ -564,11 +669,13 @@ const styles = StyleSheet.create({
   chart: {
     marginVertical: SPACING.medium,
     borderRadius: 16,
+    alignSelf: 'center',
   },
   legendContainer: {
     flexDirection: "row",
     flexWrap: "wrap",
     marginTop: SPACING.small,
+    paddingHorizontal: SPACING.small,
   },
   legendItem: {
     flexDirection: "row",
@@ -591,7 +698,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: SPACING.large,
     marginBottom: SPACING.large,
-    ...SHADOWS.medium,
+    ...(Platform.OS === 'ios' ? SHADOWS.medium : { elevation: 4, shadowColor: "#000" }),
   },
   statsTitle: {
     fontSize: FONT.sizes.large,
@@ -599,10 +706,14 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.medium,
     color: COLORS.text.primary,
   },
+  tableScrollContainer: {
+    flexGrow: 0,
+  },
   statsTable: {
     borderWidth: 1,
     borderColor: COLORS.border,
     borderRadius: 8,
+    minWidth: Dimensions.get('window').width - (SPACING.large * 4),
   },
   tableHeader: {
     flexDirection: "row",
@@ -612,11 +723,12 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.small,
   },
   tableHeaderCell: {
-    flex: 1,
+    width: 100,
     fontWeight: "bold",
     textAlign: "center",
     color: COLORS.text.primary,
     fontSize: FONT.sizes.small,
+    paddingHorizontal: SPACING.small,
   },
   tableRow: {
     flexDirection: "row",
@@ -625,10 +737,11 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.small,
   },
   tableCell: {
-    flex: 1,
+    width: 100,
     textAlign: "center",
     color: COLORS.text.primary,
     fontSize: FONT.sizes.small,
+    paddingHorizontal: SPACING.small,
   },
   exportButton: {
     marginBottom: SPACING.large,
@@ -643,6 +756,68 @@ const styles = StyleSheet.create({
   loadingText: {
     fontSize: FONT.sizes.large,
     color: COLORS.text.secondary,
+    marginTop: SPACING.medium,
+  },
+  noDataContainer: {
+    height: 220,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: COLORS.background.tertiary,
+    borderRadius: 16,
+    marginVertical: SPACING.medium,
+  },
+  noDataText: {
+    fontSize: FONT.sizes.medium,
+    color: COLORS.text.secondary,
+  },
+  errorContainer: {
+    height: 220,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: COLORS.background.tertiary,
+    borderRadius: 16,
+    marginVertical: SPACING.medium,
+  },
+  errorText: {
+    fontSize: FONT.sizes.medium,
+    color: COLORS.error,
+  },
+  webChartContainer: {
+    height: 220,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 16,
+    backgroundColor: COLORS.white,
+    marginVertical: SPACING.medium,
+    padding: SPACING.medium,
+  },
+  webChartMessage: {
+    fontSize: FONT.sizes.medium,
+    color: COLORS.text.primary,
+    marginBottom: SPACING.medium,
+    textAlign: 'center',
+  },
+  webChartDataContainer: {
+    flex: 1,
+    overflow: 'auto',
+  },
+  webChartDataRow: {
+    flexDirection: 'row',
+    paddingVertical: SPACING.small,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  webChartDataLabel: {
+    flex: 1,
+    fontSize: FONT.sizes.small,
+    fontWeight: 'bold',
+    color: COLORS.text.primary,
+  },
+  webChartDataValue: {
+    flex: 1,
+    fontSize: FONT.sizes.small,
+    color: COLORS.text.primary,
+    textAlign: 'right',
   },
 })
 

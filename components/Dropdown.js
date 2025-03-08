@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { View, Text, TouchableOpacity, StyleSheet, Modal, FlatList, SafeAreaView } from "react-native"
+import { View, Text, TouchableOpacity, StyleSheet, Modal, FlatList, SafeAreaView, Platform } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
 import { COLORS, FONT, SPACING } from "../theme"
 
@@ -29,8 +29,16 @@ const Dropdown = ({ label, data, value, onSelect, placeholder = "Select an optio
   return (
     <View style={[styles.container, style]}>
       {label && <Text style={styles.label}>{label}</Text>}
-      <TouchableOpacity style={[styles.dropdown, error && styles.dropdownError]} onPress={toggleDropdown}>
-        <Text style={selectedItem ? styles.selectedText : styles.placeholderText}>
+      <TouchableOpacity 
+        style={[styles.dropdown, error && styles.dropdownError]} 
+        onPress={toggleDropdown}
+        activeOpacity={0.7}
+      >
+        <Text 
+          style={selectedItem ? styles.selectedText : styles.placeholderText}
+          numberOfLines={1}
+          ellipsizeMode="tail"
+        >
           {selectedItem ? selectedItem.label : placeholder}
         </Text>
         <Ionicons name={visible ? "chevron-up" : "chevron-down"} size={20} color={COLORS.gray} />
@@ -38,12 +46,21 @@ const Dropdown = ({ label, data, value, onSelect, placeholder = "Select an optio
       {error && <Text style={styles.errorText}>{error}</Text>}
 
       <Modal visible={visible} transparent animationType="slide">
-        <TouchableOpacity style={styles.overlay} onPress={() => setVisible(false)} activeOpacity={1}>
+        <TouchableOpacity 
+          style={styles.overlay} 
+          onPress={() => setVisible(false)} 
+          activeOpacity={1}
+        >
           <SafeAreaView style={styles.modalContainer}>
             <View style={styles.modalContent}>
               <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>{label || "Select an option"}</Text>
-                <TouchableOpacity onPress={() => setVisible(false)}>
+                <Text style={styles.modalTitle} numberOfLines={1} ellipsizeMode="tail">
+                  {label || "Select an option"}
+                </Text>
+                <TouchableOpacity 
+                  onPress={() => setVisible(false)}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
                   <Ionicons name="close" size={24} color={COLORS.text.primary} />
                 </TouchableOpacity>
               </View>
@@ -53,6 +70,9 @@ const Dropdown = ({ label, data, value, onSelect, placeholder = "Select an optio
                 keyExtractor={(item) => item.value.toString()}
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={styles.listContainer}
+                initialNumToRender={10}
+                maxToRenderPerBatch={10}
+                windowSize={10}
               />
             </View>
           </SafeAreaView>
@@ -81,6 +101,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+    minHeight: 48,
   },
   dropdownError: {
     borderColor: COLORS.error,
@@ -107,7 +128,8 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background.secondary,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    maxHeight: "80%",
+    maxHeight: Platform.OS === 'android' ? "70%" : "80%",
+    ...(Platform.OS === 'android' ? { elevation: 5 } : {}),
   },
   modalContent: {
     padding: SPACING.large,
@@ -117,11 +139,14 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: SPACING.large,
+    paddingRight: SPACING.small,
   },
   modalTitle: {
     fontSize: FONT.sizes.large,
     fontWeight: "bold",
     color: COLORS.text.primary,
+    flex: 1,
+    marginRight: SPACING.medium,
   },
   listContainer: {
     paddingBottom: SPACING.large,
@@ -131,8 +156,10 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     paddingVertical: SPACING.medium,
+    paddingHorizontal: SPACING.small,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
+    minHeight: 48,
   },
   itemText: {
     fontSize: FONT.sizes.medium,

@@ -1,4 +1,4 @@
-import { View, StyleSheet } from "react-native"
+import { View, StyleSheet, Platform } from "react-native"
 import { COLORS, SHADOWS, SPACING } from "../theme"
 
 const Card = ({ children, style }) => {
@@ -11,7 +11,14 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: SPACING.large,
     marginVertical: SPACING.medium,
-    ...SHADOWS.medium,
+    overflow: 'hidden',
+    ...(Platform.OS === 'ios' 
+      ? SHADOWS.medium 
+      : {
+          elevation: 4,
+          shadowColor: "#000",
+        }
+    ),
   },
 })
 
