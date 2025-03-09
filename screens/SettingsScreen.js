@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, Alert, Image } from "react-native"
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, Alert, Image, StatusBar, Platform } from "react-native"
 import { useTranslation } from "react-i18next"
 import { Ionicons } from "@expo/vector-icons"
 import AsyncStorage from "@react-native-async-storage/async-storage"
@@ -126,9 +126,14 @@ const SettingsScreen = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.container}>
+      <StatusBar backgroundColor={COLORS.primary} barStyle="light-content" />
       <Header title={t("settings.title")} showBackButton={false} />
 
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+      <ScrollView 
+        style={styles.scrollView} 
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
         {/* User Profile Section */}
         <Card style={styles.profileCard}>
           <View style={styles.profileHeader}>
@@ -227,46 +232,49 @@ const SettingsScreen = ({ navigation }) => {
         <Text style={styles.sectionTitle}>{t("settings.accountActions")}</Text>
 
         <Card style={styles.actionsCard}>
-          <Button
-            title={t("settings.resetSettings")}
+          <TouchableOpacity
+            style={styles.actionButtonContainer}
             onPress={handleResetSettings}
-            type="outline"
-            icon={<Ionicons name="refresh-outline" size={18} color={COLORS.primary} style={styles.buttonIcon} />}
-            style={styles.actionButton}
-          />
+            activeOpacity={0.7}
+          >
+            <Ionicons name="refresh-outline" size={22} color={COLORS.primary} style={styles.actionIcon} />
+            <Text style={styles.actionButtonText}>{t("settings.resetSettings")}</Text>
+          </TouchableOpacity>
 
-          <Button
-            title={t("settings.clearData")}
+          <TouchableOpacity
+            style={styles.actionButtonContainer}
             onPress={handleClearData}
-            type="outline"
-            icon={<Ionicons name="trash-outline" size={18} color={COLORS.primary} style={styles.buttonIcon} />}
-            style={styles.actionButton}
-          />
+            activeOpacity={0.7}
+          >
+            <Ionicons name="trash-outline" size={22} color={COLORS.primary} style={styles.actionIcon} />
+            <Text style={styles.actionButtonText}>{t("settings.clearData")}</Text>
+          </TouchableOpacity>
 
-          <Button
-            title={t("settings.logout")}
+          <TouchableOpacity
+            style={styles.logoutButtonContainer}
             onPress={handleLogout}
-            type="primary"
-            icon={<Ionicons name="log-out-outline" size={18} color={COLORS.white} style={styles.buttonIcon} />}
-            style={styles.logoutButton}
-          />
+            activeOpacity={0.7}
+          >
+            <Ionicons name="log-out-outline" size={22} color={COLORS.white} style={styles.actionIcon} />
+            <Text style={styles.logoutButtonText}>{t("settings.logout")}</Text>
+          </TouchableOpacity>
         </Card>
 
-        {/* About Section */}
-        <Card style={styles.aboutCard}>
-          <Text style={styles.appVersion}>{t("settings.version")} 1.0.0</Text>
-
-          <View style={styles.aboutLinks}>
-            <TouchableOpacity style={styles.aboutLink}>
-              <Text style={styles.aboutLinkText}>{t("common.termsAndConditions")}</Text>
+        {/* Version Section */}
+        <Card style={styles.versionCard}>
+          <Text style={styles.versionText}>Version 1.0.0</Text>
+          
+          <View style={styles.linksContainer}>
+            <TouchableOpacity style={styles.linkButton}>
+              <Text style={styles.linkText}>{t("common.termsAndConditions")}</Text>
             </TouchableOpacity>
-
-            <TouchableOpacity style={styles.aboutLink}>
-              <Text style={styles.aboutLinkText}>{t("common.privacyPolicy")}</Text>
+            
+            <TouchableOpacity style={styles.linkButton}>
+              <Text style={styles.linkText}>{t("common.privacyPolicy")}</Text>
             </TouchableOpacity>
-
-            <TouchableOpacity style={styles.aboutLink}>
-              <Text style={styles.aboutLinkText}>{t("common.contactSupport")}</Text>
+            
+            <TouchableOpacity style={styles.linkButton}>
+              <Text style={styles.linkText}>{t("common.contactSupport")}</Text>
             </TouchableOpacity>
           </View>
         </Card>
@@ -361,39 +369,69 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.medium,
   },
   actionsCard: {
+    padding: 0,  // Remove padding for card
+    backgroundColor: COLORS.white,
+    borderRadius: 10,
+    overflow: 'hidden',
     marginBottom: SPACING.large,
+    ...(Platform.OS === 'ios' 
+      ? SHADOWS.medium 
+      : { 
+          elevation: 4,
+          shadowColor: "#000",
+          borderWidth: 0.2,
+          borderColor: COLORS.border,
+        }
+    ),
   },
-  actionButton: {
-    marginBottom: SPACING.medium,
+  actionButtonContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: SPACING.large,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+    backgroundColor: COLORS.white,
   },
-  logoutButton: {
+  actionIcon: {
+    marginRight: SPACING.medium,
+  },
+  actionButtonText: {
+    color: COLORS.primary,
+    fontSize: FONT.sizes.medium,
+    fontWeight: '500',
+  },
+  logoutButtonContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: SPACING.large,
     backgroundColor: COLORS.accent,
+    justifyContent: 'center',
   },
-  buttonIcon: {
-    marginRight: SPACING.small,
+  logoutButtonText: {
+    color: COLORS.white,
+    fontSize: FONT.sizes.medium,
+    fontWeight: 'bold',
   },
-  aboutCard: {
-    alignItems: "center",
-    paddingVertical: SPACING.large,
+  versionCard: {
+    alignItems: 'center',
+    padding: SPACING.large,
   },
-  appVersion: {
+  versionText: {
     fontSize: FONT.sizes.medium,
     color: COLORS.text.secondary,
     marginBottom: SPACING.large,
   },
-  aboutLinks: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "center",
+  linksContainer: {
+    width: '100%',
+    alignItems: 'center',
   },
-  aboutLink: {
-    marginHorizontal: SPACING.medium,
-    marginBottom: SPACING.medium,
+  linkButton: {
+    paddingVertical: SPACING.small,
   },
-  aboutLinkText: {
-    fontSize: FONT.sizes.small,
+  linkText: {
     color: COLORS.primary,
-    textDecorationLine: "underline",
+    fontSize: FONT.sizes.medium,
+    textAlign: 'center',
   },
 })
 

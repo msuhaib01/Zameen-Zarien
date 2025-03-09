@@ -59,6 +59,19 @@ const Button = ({
     }
   }
 
+  const getTextSizeStyle = () => {
+    switch (size) {
+      case "small":
+        return styles.smallText
+      case "medium":
+        return styles.mediumText
+      case "large":
+        return styles.largeText
+      default:
+        return styles.mediumText
+    }
+  }
+
   return (
     <TouchableOpacity
       style={[styles.button, getButtonStyle(), getSizeStyle(), disabled && styles.disabledButton, style]}
@@ -67,12 +80,27 @@ const Button = ({
       activeOpacity={0.7}
     >
       {loading ? (
-        <ActivityIndicator color={type === "outline" ? COLORS.primary : COLORS.white} size="small" />
+        <ActivityIndicator 
+          color={type === "outline" ? COLORS.primary : COLORS.white} 
+          size={size === "small" ? "small" : "small"} 
+        />
       ) : (
-        <>
+        <View style={styles.buttonContent}>
           {icon && <View style={styles.iconContainer}>{icon}</View>}
-          <Text style={[styles.text, getTextStyle(), disabled && styles.disabledText, textStyle]} numberOfLines={1} ellipsizeMode="tail">{title}</Text>
-        </>
+          <Text 
+            style={[
+              styles.text, 
+              getTextStyle(), 
+              getTextSizeStyle(),
+              disabled && styles.disabledText, 
+              textStyle
+            ]} 
+            numberOfLines={1} 
+            ellipsizeMode="tail"
+          >
+            {title}
+          </Text>
+        </View>
       )}
     </TouchableOpacity>
   )
@@ -90,10 +118,14 @@ const styles = StyleSheet.create({
     }),
     overflow: 'hidden', // Fix for Android ripple effect
   },
+  buttonContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+  },
   text: {
     fontWeight: "bold",
     textAlign: "center",
-    fontSize: FONT.sizes.medium,
   },
   iconContainer: {
     marginRight: SPACING.small,
@@ -144,18 +176,29 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.medium,
     paddingHorizontal: SPACING.large,
     minWidth: 120,
-    minHeight: 40,
+    minHeight: 44,
   },
   largeButton: {
     paddingVertical: SPACING.large,
     paddingHorizontal: SPACING.xl,
     minWidth: 160,
-    minHeight: 48,
+    minHeight: 52,
+  },
+  // Text sizes
+  smallText: {
+    fontSize: FONT.sizes.small,
+  },
+  mediumText: {
+    fontSize: FONT.sizes.medium,
+  },
+  largeText: {
+    fontSize: FONT.sizes.large,
   },
   // Disabled state
   disabledButton: {
     backgroundColor: COLORS.lightGray,
     borderColor: COLORS.lightGray,
+    opacity: 0.7,
   },
   disabledText: {
     color: COLORS.gray,

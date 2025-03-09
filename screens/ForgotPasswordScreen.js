@@ -11,13 +11,20 @@ import {
   Platform,
   SafeAreaView,
   Alert,
+  StatusBar,
+  Dimensions,
 } from "react-native"
 import { useTranslation } from "react-i18next"
 import { Ionicons } from "@expo/vector-icons"
 
+import Header from "../components/Header"
 import Input from "../components/Input"
 import Button from "../components/Button"
+import Card from "../components/Card"
 import { COLORS, FONT, SPACING, SHADOWS } from "../theme"
+
+const screenWidth = Dimensions.get('window').width;
+const isSmallScreen = screenWidth < 360;
 
 const ForgotPasswordScreen = ({ navigation }) => {
   const { t } = useTranslation()
@@ -59,42 +66,56 @@ const ForgotPasswordScreen = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.keyboardAvoidingView}>
-        <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
-          <View style={styles.header}>
-            <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-              <Ionicons name="arrow-back" size={24} color={COLORS.primary} />
-            </TouchableOpacity>
+      <StatusBar backgroundColor={COLORS.primary} barStyle="light-content" />
+      <Header 
+        title={t("common.appName")} 
+        showBackButton={true} 
+        onBackPress={() => navigation.goBack()}
+      />
+      
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === "ios" ? "padding" : "height"} 
+        style={styles.keyboardAvoidingView}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
+      >
+        <ScrollView 
+          contentContainerStyle={styles.scrollContainer} 
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <Card style={styles.formCard}>
+            <View style={styles.formContent}>
+              <Text style={styles.title}>{t("auth.forgotPassword")}</Text>
+              <Text style={styles.subtitle}>{t("auth.forgotPasswordInstructions")}</Text>
 
-            <Text style={styles.appName}>{t("common.appName")}</Text>
-          </View>
+              {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
-          <View style={styles.formContainer}>
-            <Text style={styles.title}>{t("auth.forgotPassword")}</Text>
-            <Text style={styles.subtitle}>{t("auth.forgotPasswordInstructions")}</Text>
+              <Input
+                label={t("common.mobileNumber")}
+                value={phoneNumber}
+                onChangeText={setPhoneNumber}
+                placeholder="03xx xxx xxxx"
+                keyboardType="phone-pad"
+                autoCapitalize="none"
+              />
 
-            {error ? <Text style={styles.errorText}>{error}</Text> : null}
+              <Button
+                title={t("auth.resetPassword")}
+                onPress={handleResetPassword}
+                loading={loading}
+                style={styles.resetButton}
+                size="large"
+              />
 
-            <Input
-              label={t("common.mobileNumber")}
-              value={phoneNumber}
-              onChangeText={setPhoneNumber}
-              placeholder="03xx xxx xxxx"
-              keyboardType="phone-pad"
-              autoCapitalize="none"
-            />
-
-            <Button
-              title={t("auth.resetPassword")}
-              onPress={handleResetPassword}
-              loading={loading}
-              style={styles.resetButton}
-            />
-
-            <TouchableOpacity style={styles.backToLoginButton} onPress={() => navigation.navigate("Login")}>
-              <Text style={styles.backToLoginText}>{t("auth.backToLogin")}</Text>
-            </TouchableOpacity>
-          </View>
+              <TouchableOpacity 
+                style={styles.backToLoginButton} 
+                onPress={() => navigation.navigate("Login")}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Text style={styles.backToLoginText}>{t("auth.backToLogin")}</Text>
+              </TouchableOpacity>
+            </View>
+          </Card>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -111,35 +132,22 @@ const styles = StyleSheet.create({
   },
   scrollContainer: {
     flexGrow: 1,
-    padding: SPACING.large,
+    padding: isSmallScreen ? SPACING.medium : SPACING.large,
+    paddingTop: SPACING.medium,
   },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: SPACING.large,
-  },
-  backButton: {
-    padding: SPACING.small,
-    marginRight: SPACING.medium,
-  },
-  appName: {
-    fontSize: FONT.sizes.xl,
-    fontWeight: "bold",
-    color: COLORS.primary,
-  },
-  formContainer: {
-    backgroundColor: COLORS.white,
-    borderRadius: 10,
-    padding: SPACING.large,
+  formCard: {
+    padding: 0,
     marginTop: SPACING.xxl,
-    ...SHADOWS.medium,
+  },
+  formContent: {
+    padding: isSmallScreen ? SPACING.medium : SPACING.large,
   },
   title: {
     fontSize: FONT.sizes.xl,
     fontWeight: "bold",
     marginBottom: SPACING.medium,
     textAlign: "center",
-    color: COLORS.text.primary,
+    color: COLORS.primary,
   },
   subtitle: {
     fontSize: FONT.sizes.medium,
@@ -154,14 +162,26 @@ const styles = StyleSheet.create({
   },
   resetButton: {
     marginTop: SPACING.large,
+    backgroundColor: COLORS.primary,
+    alignSelf: 'stretch',
+    minHeight: 50,
+    ...(Platform.OS === 'ios' 
+      ? SHADOWS.medium 
+      : { 
+          elevation: 3,
+          shadowColor: "#000",
+        }
+    ),
   },
   backToLoginButton: {
     marginTop: SPACING.large,
     alignItems: "center",
+    padding: SPACING.small,
   },
   backToLoginText: {
     color: COLORS.primary,
     fontSize: FONT.sizes.medium,
+    fontWeight: "500",
   },
 })
 

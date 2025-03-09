@@ -243,25 +243,27 @@ const AlertsScreen = ({ navigation }) => {
 
                   <View style={styles.alertInfo}>
                     <Text style={styles.alertInfoLabel}>{t("alerts.notificationMethods")}:</Text>
-                    <View style={styles.notificationMethodsContainer}>
-                      {alert.notificationMethods.push && (
-                        <View style={styles.notificationMethod}>
-                          <Ionicons name="notifications" size={16} color={COLORS.primary} />
-                          <Text style={styles.notificationMethodText}>{t("alerts.push")}</Text>
-                        </View>
-                      )}
-                      {alert.notificationMethods.sms && (
-                        <View style={styles.notificationMethod}>
-                          <Ionicons name="chatbubble" size={16} color={COLORS.primary} />
-                          <Text style={styles.notificationMethodText}>{t("alerts.sms")}</Text>
-                        </View>
-                      )}
-                      {alert.notificationMethods.email && (
-                        <View style={styles.notificationMethod}>
-                          <Ionicons name="mail" size={16} color={COLORS.primary} />
-                          <Text style={styles.notificationMethodText}>{t("alerts.email")}</Text>
-                        </View>
-                      )}
+                    <View style={styles.notificationMethodsWrapper}>
+                      <View style={styles.notificationMethodsContainer}>
+                        {alert.notificationMethods.push && (
+                          <View style={styles.notificationMethod}>
+                            <Ionicons name="notifications" size={16} color={COLORS.primary} />
+                            <Text style={styles.notificationMethodText}>{t("alerts.push")}</Text>
+                          </View>
+                        )}
+                        {alert.notificationMethods.sms && (
+                          <View style={styles.notificationMethod}>
+                            <Ionicons name="chatbubble" size={16} color={COLORS.primary} />
+                            <Text style={styles.notificationMethodText}>{t("alerts.sms")}</Text>
+                          </View>
+                        )}
+                        {alert.notificationMethods.email && (
+                          <View style={styles.notificationMethod}>
+                            <Ionicons name="mail" size={16} color={COLORS.primary} />
+                            <Text style={styles.notificationMethodText}>{t("alerts.email")}</Text>
+                          </View>
+                        )}
+                      </View>
                     </View>
                   </View>
                 </View>
@@ -525,16 +527,21 @@ const styles = StyleSheet.create({
   alertInfo: {
     flexDirection: "row",
     marginBottom: SPACING.small,
+    alignItems: "flex-start",
   },
   alertInfoLabel: {
     fontSize: FONT.sizes.medium,
     color: COLORS.text.secondary,
-    width: 120,
+    width: 140,
+    marginRight: SPACING.small,
   },
   alertInfoValue: {
     fontSize: FONT.sizes.medium,
     color: COLORS.text.primary,
     fontWeight: "500",
+    flex: 1,
+  },
+  notificationMethodsWrapper: {
     flex: 1,
   },
   notificationMethodsContainer: {
@@ -549,12 +556,12 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.xs,
     paddingHorizontal: SPACING.small,
     marginRight: SPACING.small,
-    marginBottom: SPACING.xs,
+    marginBottom: SPACING.small,
   },
   notificationMethodText: {
+    marginLeft: SPACING.xs,
     fontSize: FONT.sizes.small,
     color: COLORS.text.primary,
-    marginLeft: SPACING.xs,
   },
   alertFooter: {
     flexDirection: "row",

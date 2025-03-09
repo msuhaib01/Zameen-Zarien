@@ -552,7 +552,7 @@ const HistoricalDataScreen = ({ navigation }) => {
           title={t("historical.exportData")}
           onPress={exportData}
           type="primary"
-          icon={<Ionicons name="download-outline" size={18} color={COLORS.white} style={styles.buttonIcon} />}
+          icon={<Ionicons name="download-outline" size={18} color={COLORS.white} />}
           style={styles.exportButton}
         />
       </ScrollView>
@@ -745,6 +745,16 @@ const styles = StyleSheet.create({
   },
   exportButton: {
     marginBottom: SPACING.large,
+    backgroundColor: COLORS.primary,
+    alignSelf: 'center',
+    minWidth: 200,
+    ...(Platform.OS === 'ios' 
+      ? SHADOWS.medium 
+      : { 
+          elevation: 3,
+          shadowColor: "#000",
+        }
+    ),
   },
   buttonIcon: {
     marginRight: SPACING.small,

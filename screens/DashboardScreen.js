@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, SafeAreaView } from "react-native"
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, SafeAreaView, Platform } from "react-native"
 import { useTranslation } from "react-i18next"
 import { Ionicons } from "@expo/vector-icons"
 import { LineChart } from "react-native-chart-kit"
@@ -11,7 +11,7 @@ import Header from "../components/Header"
 import Card from "../components/Card"
 import Button from "../components/Button"
 import Dropdown from "../components/Dropdown"
-import { COLORS, FONT, SPACING } from "../theme"
+import { COLORS, FONT, SPACING, SHADOWS } from "../theme"
 import { useApp } from "../context/AppContext"
 
 const screenWidth = Dimensions.get("window").width
@@ -185,7 +185,7 @@ const DashboardScreen = ({ navigation }) => {
                   /* Handle export data */
                 }}
                 type="outline"
-                icon={<Ionicons name="download-outline" size={18} color={COLORS.primary} style={styles.buttonIcon} />}
+                icon={<Ionicons name="download-outline" size={18} color={COLORS.primary} />}
                 style={styles.actionButton}
               />
 
@@ -193,9 +193,7 @@ const DashboardScreen = ({ navigation }) => {
                 title={t("dashboard.setAlert")}
                 onPress={() => navigation.navigate("Alerts")}
                 type="outline"
-                icon={
-                  <Ionicons name="notifications-outline" size={18} color={COLORS.primary} style={styles.buttonIcon} />
-                }
+                icon={<Ionicons name="notifications-outline" size={18} color={COLORS.primary} />}
                 style={styles.actionButton}
               />
             </View>
@@ -315,7 +313,16 @@ const styles = StyleSheet.create({
   },
   actionButton: {
     flex: 1,
-    marginHorizontal: SPACING.xs,
+    marginHorizontal: SPACING.small,
+    ...(Platform.OS === 'ios' 
+      ? SHADOWS.small 
+      : { 
+          elevation: 2,
+          shadowColor: "#000",
+          borderWidth: 1,
+          borderColor: COLORS.border,
+        }
+    ),
   },
   navigationContainer: {
     marginBottom: SPACING.large,
