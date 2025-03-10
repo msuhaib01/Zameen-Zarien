@@ -31,7 +31,8 @@
     },
     "plugins": [
       "expo-asset",
-      "expo-localization"
+      "expo-localization",
+      "expo-splash-screen"
     ]
   }
 }

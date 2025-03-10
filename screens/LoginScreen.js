@@ -204,10 +204,23 @@ const styles = StyleSheet.create({
   logoContainer: {
     alignItems: "center",
     marginVertical: isSmallScreen ? SPACING.large : SPACING.xxl,
+    width: isSmallScreen ? 130 : 160,
+    height: isSmallScreen ? 130 : 160,
+    borderRadius: isSmallScreen ? 65 : 80,
+    backgroundColor: COLORS.white,
+    justifyContent: 'center',
+    alignSelf: 'center',
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    overflow: 'hidden',
   },
   logo: {
     width: isSmallScreen ? 120 : 150,
     height: isSmallScreen ? 120 : 150,
+    borderRadius: isSmallScreen ? 60 : 75,
   },
   formCard: {
     padding: 0,
@@ -236,7 +249,8 @@ const styles = StyleSheet.create({
   eyeIcon: {
     position: "absolute",
     right: 12,
-    top: 38,
+    top: "50%",
+    transform: [{ translateY: -12 }],
     width: 40,
     height: 40,
     alignItems: 'center',

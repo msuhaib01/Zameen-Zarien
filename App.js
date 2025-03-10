@@ -1,8 +1,8 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { StatusBar } from "expo-status-bar"
-import { LogBox, View, Text } from "react-native"
+import { useEffect, useState, useCallback } from "react"
+import { StatusBar, View, StyleSheet } from "react-native"
+import { LogBox, Text } from "react-native"
 import { Asset } from "expo-asset"
 import * as SplashScreen from "expo-splash-screen"
 import { GestureHandlerRootView } from "react-native-gesture-handler"
@@ -17,6 +17,9 @@ import AppNavigator from "./navigation"
 // Import context provider
 import { AppProvider } from "./context/AppContext"
 
+// Import animated splash screen
+import AnimatedSplashScreen from "./components/AnimatedSplashScreen"
+
 // Ignore specific warnings
 LogBox.ignoreLogs([
   "Reanimated 2",
@@ -30,6 +33,7 @@ SplashScreen.preventAutoHideAsync()
 export default function App() {
   const [isReady, setIsReady] = useState(false)
   const [error, setError] = useState(null)
+  const [showSplashAnimation, setShowSplashAnimation] = useState(true)
 
   useEffect(() => {
     async function prepare() {
@@ -50,11 +54,17 @@ export default function App() {
         setError(e)
       } finally {
         setIsReady(true)
+        // Hide the expo splash screen to show our custom animated splash
         await SplashScreen.hideAsync()
       }
     }
 
     prepare()
+  }, [])
+
+  // Handle splash animation complete
+  const onAnimationComplete = useCallback(() => {
+    setShowSplashAnimation(false)
   }, [])
 
   if (!isReady) {
@@ -70,14 +80,27 @@ export default function App() {
   }
 
   return (
-    <I18nextProvider i18n={i18n}>
-      <GestureHandlerRootView style={{ flex: 1 }}>
-        <AppProvider>
-          <StatusBar style="auto" />
-          <AppNavigator />
-        </AppProvider>
-      </GestureHandlerRootView>
-    </I18nextProvider>
+    <View style={styles.container}>
+      <I18nextProvider i18n={i18n}>
+        <GestureHandlerRootView style={styles.container}>
+          <AppProvider>
+            <StatusBar 
+              backgroundColor={showSplashAnimation ? "#006400" : "transparent"} 
+              barStyle={showSplashAnimation ? "light-content" : "auto"} 
+              translucent={!showSplashAnimation}
+            />
+            <AppNavigator />
+            {showSplashAnimation && <AnimatedSplashScreen onAnimationComplete={onAnimationComplete} />}
+          </AppProvider>
+        </GestureHandlerRootView>
+      </I18nextProvider>
+    </View>
   )
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  }
+});
 

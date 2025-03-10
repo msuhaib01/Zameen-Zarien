@@ -184,6 +184,7 @@ const enTranslations = {
     lastMonth: "Last Month",
     lastYear: "Last Year",
     location: "Location",
+    period: "Period",
   },
   notifications: {
     title: "Notifications",
@@ -441,6 +442,7 @@ const urTranslations = {
     lastMonth: "آخری مہینہ",
     lastYear: "آخری سال",
     location: "موقع",
+    period: "مدت",
   },
   notifications: {
     title: "نوٹیفیکیشنز",

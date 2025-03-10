@@ -199,17 +199,15 @@ const DashboardScreen = ({ navigation }) => {
               )}
             </Card>
 
-            <View style={styles.actionsContainer}>
+            <View style={styles.navigationContainer}>
               <Button
                 title={t("dashboard.setAlert")}
                 onPress={() => navigation.navigate("Alerts")}
-                type="outline"
-                icon={<Ionicons name="notifications-outline" size={18} color={COLORS.primary} />}
-                style={styles.actionButton}
+                type="primary"
+                icon={<Ionicons name="notifications-outline" size={18} color={COLORS.white} style={styles.buttonIcon} />}
+                style={styles.navigationButton}
               />
-            </View>
 
-            <View style={styles.navigationContainer}>
               <Button
                 title={t("dashboard.viewHistorical")}
                 onPress={() => navigation.navigate("Historical")}
@@ -316,24 +314,6 @@ const styles = StyleSheet.create({
   chart: {
     marginVertical: SPACING.medium,
     borderRadius: 16,
-  },
-  actionsContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: SPACING.large,
-  },
-  actionButton: {
-    flex: 1,
-    marginHorizontal: SPACING.small,
-    ...(Platform.OS === 'ios' 
-      ? SHADOWS.small 
-      : { 
-          elevation: 2,
-          shadowColor: "#000",
-          borderWidth: 1,
-          borderColor: COLORS.border,
-        }
-    ),
   },
   navigationContainer: {
     marginBottom: SPACING.large,
