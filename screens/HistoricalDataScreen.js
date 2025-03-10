@@ -29,7 +29,7 @@ const screenWidth = Dimensions.get("window").width
 
 const HistoricalDataScreen = ({ navigation }) => {
   const { t } = useTranslation()
-  const { commodities, selectedCommodity, setSelectedCommodity, getCommodityData } = useApp()
+  const { commodities, selectedCommodity, setSelectedCommodity, locations, selectedLocation, setSelectedLocation, getCommodityData } = useApp()
 
   const [refreshing, setRefreshing] = useState(false)
   const [priceData, setPriceData] = useState(null)
@@ -42,6 +42,7 @@ const HistoricalDataScreen = ({ navigation }) => {
   const [compareCommodities, setCompareCommodities] = useState(false)
   const [selectedCommodities, setSelectedCommodities] = useState([selectedCommodity])
   const [isWebPlatform, setIsWebPlatform] = useState(Platform.OS === 'web')
+  const [activeTab, setActiveTab] = useState('commodity') // 'commodity' or 'location'
 
   // Chart type options
   const chartTypeOptions = [
@@ -62,19 +63,25 @@ const HistoricalDataScreen = ({ navigation }) => {
     value: commodity.id,
   }))
 
+  // Location options
+  const locationOptions = locations.map((location) => ({
+    label: t("common.language") === "en" ? location.name : location.name_ur,
+    value: location.id,
+  }))
+
   // Determine platform on mount
   useEffect(() => {
     setIsWebPlatform(Platform.OS === 'web')
   }, [])
 
-  // Load price data when selected commodity changes
+  // Load price data when selected commodity or location changes
   useEffect(() => {
     try {
       loadPriceData()
     } catch (error) {
       console.error("Error loading price data:", error)
     }
-  }, [selectedCommodity, timeRange, startDate, endDate])
+  }, [selectedCommodity, selectedLocation, timeRange, startDate, endDate])
 
   // Update selected commodities when toggling compare mode
   useEffect(() => {
@@ -286,12 +293,6 @@ const HistoricalDataScreen = ({ navigation }) => {
     return `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`
   }
 
-  // Export data
-  const exportData = () => {
-    // In a real app, this would generate and download a CSV or Excel file
-    alert(t("historical.exportSuccess"))
-  }
-
   // Rendering helper - safely render chart
   const renderChart = () => {
     try {
@@ -351,14 +352,43 @@ const HistoricalDataScreen = ({ navigation }) => {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         showsVerticalScrollIndicator={false}
       >
+        <View style={styles.tabContainer}>
+          <TouchableOpacity
+            style={[styles.tab, activeTab === 'commodity' && styles.activeTab]}
+            onPress={() => setActiveTab('commodity')}
+          >
+            <Text style={[styles.tabText, activeTab === 'commodity' && styles.activeTabText]}>
+              {t("dashboard.commodity")}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.tab, activeTab === 'location' && styles.activeTab]}
+            onPress={() => setActiveTab('location')}
+          >
+            <Text style={[styles.tabText, activeTab === 'location' && styles.activeTabText]}>
+              {t("historical.location")}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
         <View style={styles.filtersContainer}>
-          <Dropdown
-            label={t("dashboard.commodity")}
-            data={commodityOptions}
-            value={selectedCommodity}
-            onSelect={setSelectedCommodity}
-            style={styles.dropdown}
-          />
+          {activeTab === 'commodity' ? (
+            <Dropdown
+              label={t("dashboard.commodity")}
+              data={commodityOptions}
+              value={selectedCommodity}
+              onSelect={setSelectedCommodity}
+              style={styles.dropdown}
+            />
+          ) : (
+            <Dropdown
+              label={t("historical.location")}
+              data={locationOptions}
+              value={selectedLocation}
+              onSelect={setSelectedLocation}
+              style={styles.dropdown}
+            />
+          )}
 
           <Dropdown
             label={t("historical.timeRange")}
@@ -465,6 +495,10 @@ const HistoricalDataScreen = ({ navigation }) => {
                   ? commodities.find((c) => c.id === selectedCommodities[0])?.name
                   : commodities.find((c) => c.id === selectedCommodities[0])?.name_ur
                 : t("historical.multipleCommodities")}
+              {" - "}
+              {t("common.language") === "en"
+                ? locations.find((l) => l.id === selectedLocation)?.name
+                : locations.find((l) => l.id === selectedLocation)?.name_ur}
             </Text>
 
             {renderChart()}
@@ -547,14 +581,6 @@ const HistoricalDataScreen = ({ navigation }) => {
             </View>
           </ScrollView>
         </View>
-
-        <Button
-          title={t("historical.exportData")}
-          onPress={exportData}
-          type="primary"
-          icon={<Ionicons name="download-outline" size={18} color={COLORS.white} />}
-          style={styles.exportButton}
-        />
       </ScrollView>
     </SafeAreaView>
   )
@@ -571,6 +597,30 @@ const styles = StyleSheet.create({
   scrollContent: {
     padding: SPACING.large,
     paddingBottom: SPACING.xxxl,
+  },
+  tabContainer: {
+    flexDirection: 'row',
+    marginBottom: SPACING.medium,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    overflow: 'hidden',
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: SPACING.medium,
+    alignItems: 'center',
+    backgroundColor: COLORS.background.tertiary,
+  },
+  activeTab: {
+    backgroundColor: COLORS.primary,
+  },
+  tabText: {
+    fontSize: FONT.sizes.medium,
+    color: COLORS.text.primary,
+  },
+  activeTabText: {
+    color: COLORS.white,
   },
   filtersContainer: {
     marginBottom: SPACING.medium,
@@ -742,22 +792,6 @@ const styles = StyleSheet.create({
     color: COLORS.text.primary,
     fontSize: FONT.sizes.small,
     paddingHorizontal: SPACING.small,
-  },
-  exportButton: {
-    marginBottom: SPACING.large,
-    backgroundColor: COLORS.primary,
-    alignSelf: 'center',
-    minWidth: 200,
-    ...(Platform.OS === 'ios' 
-      ? SHADOWS.medium 
-      : { 
-          elevation: 3,
-          shadowColor: "#000",
-        }
-    ),
-  },
-  buttonIcon: {
-    marginRight: SPACING.small,
   },
   loadingContainer: {
     padding: SPACING.xxl,

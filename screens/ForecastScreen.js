@@ -55,12 +55,11 @@ const SHADOWS = {
 
 const ForecastScreen = ({ navigation }) => {
   const { t } = useTranslation()
-  const { commodities, selectedCommodity, setSelectedCommodity, getCommodityData } = useApp()
+  const { commodities, selectedCommodity, setSelectedCommodity, locations, selectedLocation, setSelectedLocation, getCommodityData } = useApp()
 
   const [refreshing, setRefreshing] = useState(false)
   const [priceData, setPriceData] = useState(null)
   const [forecastDays, setForecastDays] = useState(7)
-  const [showConfidenceInterval, setShowConfidenceInterval] = useState(true)
   const [compareWithHistorical, setCompareWithHistorical] = useState(false)
 
   // Commodity options
@@ -69,10 +68,16 @@ const ForecastScreen = ({ navigation }) => {
     value: commodity.id,
   }))
 
+  // Location options
+  const locationOptions = locations.map((location) => ({
+    label: t("common.language") === "en" ? location.name : location.name_ur,
+    value: location.id,
+  }))
+
   // Load price data when selected commodity changes
   useEffect(() => {
     loadPriceData()
-  }, [selectedCommodity])
+  }, [selectedCommodity, selectedLocation])
 
   // Load price data
   const loadPriceData = () => {
@@ -105,25 +110,6 @@ const ForecastScreen = ({ navigation }) => {
       },
     ]
 
-    // Add confidence intervals if enabled
-    if (showConfidenceInterval) {
-      // Upper confidence bound
-      datasets.push({
-        data: forecastData.map((item) => item.confidence[1]),
-        color: (opacity = 0.5) => `rgba(0, 100, 0, ${opacity})`, // Lighter green
-        strokeWidth: 1,
-        withDots: false,
-      })
-
-      // Lower confidence bound
-      datasets.push({
-        data: forecastData.map((item) => item.confidence[0]),
-        color: (opacity = 0.5) => `rgba(0, 100, 0, ${opacity})`, // Lighter green
-        strokeWidth: 1,
-        withDots: false,
-      })
-    }
-
     // Add historical data if enabled
     if (compareWithHistorical && priceData.history) {
       const historicalData = priceData.history.slice(-forecastDays)
@@ -142,7 +128,6 @@ const ForecastScreen = ({ navigation }) => {
       datasets,
       legend: [
         t("forecast.predictedPrice"),
-        ...(showConfidenceInterval ? [t("forecast.confidenceInterval")] : []),
         ...(compareWithHistorical ? [t("historical.title")] : []),
       ],
     }
@@ -182,6 +167,14 @@ const ForecastScreen = ({ navigation }) => {
             onSelect={setSelectedCommodity}
             style={styles.dropdown}
           />
+          
+          <Dropdown
+            label={t("historical.location")}
+            data={locationOptions}
+            value={selectedLocation}
+            onSelect={setSelectedLocation}
+            style={styles.dropdown}
+          />
         </View>
 
         {priceData ? (
@@ -191,6 +184,10 @@ const ForecastScreen = ({ navigation }) => {
                 {t("common.language") === "en"
                   ? commodities.find((c) => c.id === selectedCommodity)?.name
                   : commodities.find((c) => c.id === selectedCommodity)?.name_ur}
+                {" - "}
+                {t("common.language") === "en"
+                  ? locations.find((l) => l.id === selectedLocation)?.name
+                  : locations.find((l) => l.id === selectedLocation)?.name_ur}
               </Text>
 
               <View style={styles.forecastDurationContainer}>
@@ -211,18 +208,6 @@ const ForecastScreen = ({ navigation }) => {
               </View>
 
               <View style={styles.optionsContainer}>
-                <TouchableOpacity
-                  style={styles.optionButton}
-                  onPress={() => setShowConfidenceInterval(!showConfidenceInterval)}
-                >
-                  <Ionicons
-                    name={showConfidenceInterval ? "checkbox" : "square-outline"}
-                    size={24}
-                    color={COLORS.primary}
-                  />
-                  <Text style={styles.optionText}>{t("forecast.showConfidenceInterval")}</Text>
-                </TouchableOpacity>
-
                 <TouchableOpacity
                   style={styles.optionButton}
                   onPress={() => setCompareWithHistorical(!compareWithHistorical)}
@@ -257,13 +242,6 @@ const ForecastScreen = ({ navigation }) => {
                   <Text style={styles.legendText}>{t("forecast.predictedPrice")}</Text>
                 </View>
 
-                {showConfidenceInterval && (
-                  <View style={styles.legendItem}>
-                    <View style={[styles.legendColor, { backgroundColor: COLORS.primary, opacity: 0.5 }]} />
-                    <Text style={styles.legendText}>{t("forecast.confidenceInterval")}</Text>
-                  </View>
-                )}
-
                 {compareWithHistorical && (
                   <View style={styles.legendItem}>
                     <View style={[styles.legendColor, { backgroundColor: COLORS.accent }]} />
@@ -280,30 +258,16 @@ const ForecastScreen = ({ navigation }) => {
                 <View style={styles.tableHeader}>
                   <Text style={styles.tableHeaderCell}>{t("common.date")}</Text>
                   <Text style={styles.tableHeaderCell}>{t("forecast.predictedPrice")}</Text>
-                  <Text style={styles.tableHeaderCell}>{t("forecast.confidenceMin")}</Text>
-                  <Text style={styles.tableHeaderCell}>{t("forecast.confidenceMax")}</Text>
                 </View>
 
                 {priceData.forecast.slice(0, forecastDays).map((item, index) => (
                   <View key={index} style={styles.tableRow}>
                     <Text style={styles.tableCell}>{new Date(item.date).toLocaleDateString()}</Text>
                     <Text style={styles.tableCell}>PKR {item.price}</Text>
-                    <Text style={styles.tableCell}>PKR {item.confidence[0]}</Text>
-                    <Text style={styles.tableCell}>PKR {item.confidence[1]}</Text>
                   </View>
                 ))}
               </View>
             </View>
-
-            <Button
-              title={t("forecast.downloadReport")}
-              onPress={() => {
-                /* Handle download report */
-              }}
-              type="primary"
-              icon={<Ionicons name="download-outline" size={18} color={COLORS.white} style={styles.buttonIcon} />}
-              style={styles.downloadButton}
-            />
           </>
         ) : (
           <View style={styles.loadingContainer}>
@@ -444,12 +408,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
     color: COLORS.text.primary,
     fontSize: FONT.sizes.small,
-  },
-  downloadButton: {
-    marginBottom: SPACING.large,
-  },
-  buttonIcon: {
-    marginRight: SPACING.small,
   },
   loadingContainer: {
     padding: SPACING.xxl,

@@ -18,7 +18,17 @@ const screenWidth = Dimensions.get("window").width
 
 const DashboardScreen = ({ navigation }) => {
   const { t } = useTranslation()
-  const { commodities, selectedCommodity, setSelectedCommodity, timePeriod, setTimePeriod, getCommodityData } = useApp()
+  const { 
+    commodities, 
+    selectedCommodity, 
+    setSelectedCommodity,
+    locations,
+    selectedLocation,
+    setSelectedLocation,
+    timePeriod, 
+    setTimePeriod, 
+    getCommodityData 
+  } = useApp()
 
   const [refreshing, setRefreshing] = useState(false)
   const [priceData, setPriceData] = useState(null)
@@ -35,6 +45,12 @@ const DashboardScreen = ({ navigation }) => {
   const commodityOptions = commodities.map((commodity) => ({
     label: t("common.language") === "en" ? commodity.name : commodity.name_ur,
     value: commodity.id,
+  }))
+
+  // Location options
+  const locationOptions = locations.map((location) => ({
+    label: t("common.language") === "en" ? location.name : location.name_ur,
+    value: location.id,
   }))
 
   // Load price data when selected commodity changes
@@ -97,16 +113,9 @@ const DashboardScreen = ({ navigation }) => {
     },
   }
 
-  // Header right component
-  const HeaderRight = () => (
-    <TouchableOpacity style={styles.notificationButton} onPress={() => navigation.navigate("Notifications")}>
-      <Ionicons name="notifications" size={24} color={COLORS.white} />
-    </TouchableOpacity>
-  )
-
   return (
     <SafeAreaView style={styles.container}>
-      <Header title={t("dashboard.title")} rightComponent={<HeaderRight />} />
+      <Header title={t("dashboard.title")} showNotificationsButton={true} onNotificationsPress={() => navigation.navigate("Notifications")} />
 
       <ScrollView
         style={styles.scrollView}
@@ -123,6 +132,14 @@ const DashboardScreen = ({ navigation }) => {
           />
 
           <Dropdown
+            label={t("historical.location")}
+            data={locationOptions}
+            value={selectedLocation}
+            onSelect={setSelectedLocation}
+            style={styles.dropdown}
+          />
+
+          <Dropdown
             label={t("dashboard.timePeriod")}
             data={timePeriodOptions}
             value={timePeriod}
@@ -134,10 +151,14 @@ const DashboardScreen = ({ navigation }) => {
         {priceData ? (
           <>
             <Card style={styles.priceCard}>
-              <Text style={styles.cardTitle}>
+              <Text style={styles.commodityName}>
+                {t("common.language") === "en" 
+                  ? commodities.find(c => c.id === selectedCommodity)?.name 
+                  : commodities.find(c => c.id === selectedCommodity)?.name_ur}
+                {" - "}
                 {t("common.language") === "en"
-                  ? commodities.find((c) => c.id === selectedCommodity)?.name
-                  : commodities.find((c) => c.id === selectedCommodity)?.name_ur}
+                  ? locations.find(l => l.id === selectedLocation)?.name
+                  : locations.find(l => l.id === selectedLocation)?.name_ur}
               </Text>
 
               <View style={styles.currentPriceContainer}>
@@ -179,16 +200,6 @@ const DashboardScreen = ({ navigation }) => {
             </Card>
 
             <View style={styles.actionsContainer}>
-              <Button
-                title={t("dashboard.exportData")}
-                onPress={() => {
-                  /* Handle export data */
-                }}
-                type="outline"
-                icon={<Ionicons name="download-outline" size={18} color={COLORS.primary} />}
-                style={styles.actionButton}
-              />
-
               <Button
                 title={t("dashboard.setAlert")}
                 onPress={() => navigation.navigate("Alerts")}
@@ -252,7 +263,7 @@ const styles = StyleSheet.create({
   priceCard: {
     marginBottom: SPACING.large,
   },
-  cardTitle: {
+  commodityName: {
     fontSize: FONT.sizes.xl,
     fontWeight: "bold",
     marginBottom: SPACING.medium,

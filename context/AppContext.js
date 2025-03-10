@@ -16,6 +16,15 @@ const sampleCommodities = [
   { id: 5, name: "Maize", name_ur: "مکئی" },
 ]
 
+// Add sample locations
+const sampleLocations = [
+  { id: 1, name: "Lahore", name_ur: "لاہور" },
+  { id: 2, name: "Karachi", name_ur: "کراچی" },
+  { id: 3, name: "Islamabad", name_ur: "اسلام آباد" },
+  { id: 4, name: "Multan", name_ur: "ملتان" },
+  { id: 5, name: "Peshawar", name_ur: "پشاور" },
+]
+
 const samplePriceData = {
   1: {
     // Wheat
@@ -173,6 +182,7 @@ export const AppProvider = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true)
   const [language, setLanguage] = useState(i18n.language)
   const [selectedCommodity, setSelectedCommodity] = useState(1) // Default to Wheat
+  const [selectedLocation, setSelectedLocation] = useState(1) // Default to Lahore
   const [timePeriod, setTimePeriod] = useState("week") // 'day', 'week', 'month', 'year'
   const [alerts, setAlerts] = useState(sampleAlerts)
   const [notifications, setNotifications] = useState(sampleNotifications)
@@ -353,6 +363,8 @@ export const AppProvider = ({ children }) => {
     language,
     selectedCommodity,
     setSelectedCommodity,
+    selectedLocation,
+    setSelectedLocation,
     timePeriod,
     setTimePeriod,
     alerts,
@@ -370,6 +382,7 @@ export const AppProvider = ({ children }) => {
     markNotificationAsRead,
     deleteNotification,
     commodities: sampleCommodities,
+    locations: sampleLocations,
   }
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>
