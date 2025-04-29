@@ -1,11 +1,11 @@
-"use client"
+"use client";
 
-import { createContext, useState, useEffect, useContext } from "react"
-import AsyncStorage from "@react-native-async-storage/async-storage"
-import { useTranslation } from "react-i18next"
+import { createContext, useState, useEffect, useContext } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useTranslation } from "react-i18next";
 
 // Create context
-const AppContext = createContext()
+const AppContext = createContext();
 
 // Sample data for demonstration
 const sampleCommodities = [
@@ -14,7 +14,7 @@ const sampleCommodities = [
   { id: 3, name: "Cotton", name_ur: "کپاس" },
   { id: 4, name: "Sugarcane", name_ur: "گنا" },
   { id: 5, name: "Maize", name_ur: "مکئی" },
-]
+];
 
 // Add sample locations
 const sampleLocations = [
@@ -23,7 +23,7 @@ const sampleLocations = [
   { id: 3, name: "Islamabad", name_ur: "اسلام آباد" },
   { id: 4, name: "Multan", name_ur: "ملتان" },
   { id: 5, name: "Peshawar", name_ur: "پشاور" },
-]
+];
 
 const samplePriceData = {
   1: {
@@ -82,7 +82,7 @@ const samplePriceData = {
       { date: "2023-01-17", price: 148, confidence: [142, 154] },
     ],
   },
-}
+};
 
 // Sample alerts data
 const sampleAlerts = [
@@ -127,7 +127,7 @@ const sampleAlerts = [
     triggerPrice: 188,
     createdAt: "2023-01-08T16:20:00Z",
   },
-]
+];
 
 // Sample notifications data
 const sampleNotifications = [
@@ -143,7 +143,8 @@ const sampleNotifications = [
   {
     id: "2",
     title: "New Market Report Available",
-    message: "The monthly market analysis report for agricultural commodities is now available.",
+    message:
+      "The monthly market analysis report for agricultural commodities is now available.",
     timestamp: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(), // 1 day ago
     read: true,
     type: "system",
@@ -160,7 +161,8 @@ const sampleNotifications = [
   {
     id: "4",
     title: "App Update Available",
-    message: "A new version of Zameen Zarien is available with improved features and bug fixes.",
+    message:
+      "A new version of Zameen Zarien is available with improved features and bug fixes.",
     timestamp: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(), // 5 days ago
     read: true,
     type: "update",
@@ -168,101 +170,102 @@ const sampleNotifications = [
   {
     id: "5",
     title: "Welcome to Zameen Zarien",
-    message: "Thank you for joining Zameen Zarien. Start monitoring commodity prices and set up alerts.",
+    message:
+      "Thank you for joining Zameen Zarien. Start monitoring commodity prices and set up alerts.",
     timestamp: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days ago
     read: true,
     type: "system",
   },
-]
+];
 
 // Provider component
 export const AppProvider = ({ children }) => {
-  const { i18n } = useTranslation()
-  const [user, setUser] = useState(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [language, setLanguage] = useState(i18n.language)
-  const [selectedCommodity, setSelectedCommodity] = useState(1) // Default to Wheat
-  const [selectedLocation, setSelectedLocation] = useState(1) // Default to Lahore
-  const [timePeriod, setTimePeriod] = useState("week") // 'day', 'week', 'month', 'year'
-  const [alerts, setAlerts] = useState(sampleAlerts)
-  const [notifications, setNotifications] = useState(sampleNotifications)
-  const [doNotDisturb, setDoNotDisturb] = useState(false)
+  const { i18n } = useTranslation();
+  const [user, setUser] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [language, setLanguage] = useState(i18n.language);
+  const [selectedCommodity, setSelectedCommodity] = useState(1); // Default to Wheat
+  const [selectedLocation, setSelectedLocation] = useState(1); // Default to Lahore
+  const [timePeriod, setTimePeriod] = useState("week"); // 'day', 'week', 'month', 'year'
+  const [alerts, setAlerts] = useState(sampleAlerts);
+  const [notifications, setNotifications] = useState(sampleNotifications);
+  const [doNotDisturb, setDoNotDisturb] = useState(false);
 
   // Load user data from AsyncStorage on app start
   useEffect(() => {
     const loadUserData = async () => {
       try {
-        const userData = await AsyncStorage.getItem("user")
+        const userData = await AsyncStorage.getItem("user");
         if (userData) {
-          setUser(JSON.parse(userData))
+          setUser(JSON.parse(userData));
         }
 
-        const savedLanguage = await AsyncStorage.getItem("language")
+        const savedLanguage = await AsyncStorage.getItem("language");
         if (savedLanguage) {
-          setLanguage(savedLanguage)
-          i18n.changeLanguage(savedLanguage)
+          setLanguage(savedLanguage);
+          i18n.changeLanguage(savedLanguage);
         }
 
-        const savedAlerts = await AsyncStorage.getItem("alerts")
+        const savedAlerts = await AsyncStorage.getItem("alerts");
         if (savedAlerts) {
-          setAlerts(JSON.parse(savedAlerts))
+          setAlerts(JSON.parse(savedAlerts));
         }
 
-        const savedNotifications = await AsyncStorage.getItem("notifications")
+        const savedNotifications = await AsyncStorage.getItem("notifications");
         if (savedNotifications) {
-          setNotifications(JSON.parse(savedNotifications))
+          setNotifications(JSON.parse(savedNotifications));
         }
 
-        const dndStatus = await AsyncStorage.getItem("doNotDisturb")
+        const dndStatus = await AsyncStorage.getItem("doNotDisturb");
         if (dndStatus) {
-          setDoNotDisturb(JSON.parse(dndStatus))
+          setDoNotDisturb(JSON.parse(dndStatus));
         }
       } catch (error) {
-        console.error("Error loading user data:", error)
+        console.error("Error loading user data:", error);
       } finally {
-        setIsLoading(false)
+        setIsLoading(false);
       }
-    }
+    };
 
-    loadUserData()
-  }, [i18n])
+    loadUserData();
+  }, [i18n]);
 
   // Save user data to AsyncStorage when it changes
   useEffect(() => {
     if (user) {
-      AsyncStorage.setItem("user", JSON.stringify(user))
+      AsyncStorage.setItem("user", JSON.stringify(user));
     }
-  }, [user])
+  }, [user]);
 
   // Save language preference when it changes
   useEffect(() => {
-    AsyncStorage.setItem("language", language)
-    i18n.changeLanguage(language)
-  }, [language, i18n])
+    AsyncStorage.setItem("language", language);
+    i18n.changeLanguage(language);
+  }, [language, i18n]);
 
   // Save alerts when they change
   useEffect(() => {
-    AsyncStorage.setItem("alerts", JSON.stringify(alerts))
-  }, [alerts])
+    AsyncStorage.setItem("alerts", JSON.stringify(alerts));
+  }, [alerts]);
 
   // Save notifications when they change
   useEffect(() => {
-    AsyncStorage.setItem("notifications", JSON.stringify(notifications))
-  }, [notifications])
+    AsyncStorage.setItem("notifications", JSON.stringify(notifications));
+  }, [notifications]);
 
   // Save Do Not Disturb status when it changes
   useEffect(() => {
-    AsyncStorage.setItem("doNotDisturb", JSON.stringify(doNotDisturb))
-  }, [doNotDisturb])
+    AsyncStorage.setItem("doNotDisturb", JSON.stringify(doNotDisturb));
+  }, [doNotDisturb]);
 
   // Login function
   const login = async (phoneNumber, password) => {
     // In a real app, you would make an API call to authenticate
     // For demo purposes, we'll just set a mock user
-    setIsLoading(true)
+    setIsLoading(true);
     try {
       // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000))
+      await new Promise((resolve) => setTimeout(resolve, 1000));
 
       // Mock successful login
       const userData = {
@@ -270,41 +273,41 @@ export const AppProvider = ({ children }) => {
         phoneNumber,
         name: "Demo User",
         email: "user@example.com",
-      }
+      };
 
-      setUser(userData)
-      return { success: true }
+      setUser(userData);
+      return { success: true };
     } catch (error) {
-      return { success: false, error: error.message }
+      return { success: false, error: error.message };
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   // Logout function
   const logout = async () => {
-    setIsLoading(true)
+    setIsLoading(true);
     try {
       // Clear user data
-      await AsyncStorage.removeItem("user")
-      setUser(null)
-      return { success: true }
+      await AsyncStorage.removeItem("user");
+      setUser(null);
+      return { success: true };
     } catch (error) {
-      return { success: false, error: error.message }
+      return { success: false, error: error.message };
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   // Change language
   const changeLanguage = (lang) => {
-    setLanguage(lang)
-  }
+    setLanguage(lang);
+  };
 
   // Get commodity data
   const getCommodityData = (commodityId) => {
-    return samplePriceData[commodityId] || null
-  }
+    return samplePriceData[commodityId] || null;
+  };
 
   // Add alert
   const addAlert = (alert) => {
@@ -312,25 +315,31 @@ export const AppProvider = ({ children }) => {
       id: Date.now().toString(),
       createdAt: new Date().toISOString(),
       ...alert,
-    }
-    setAlerts((prevAlerts) => [...prevAlerts, newAlert])
-    return newAlert
-  }
+    };
+    setAlerts((prevAlerts) => [...prevAlerts, newAlert]);
+    return newAlert;
+  };
 
   // Update alert
   const updateAlert = (alertId, updatedData) => {
-    setAlerts((prevAlerts) => prevAlerts.map((alert) => (alert.id === alertId ? { ...alert, ...updatedData } : alert)))
-  }
+    setAlerts((prevAlerts) =>
+      prevAlerts.map((alert) =>
+        alert.id === alertId ? { ...alert, ...updatedData } : alert
+      )
+    );
+  };
 
   // Delete alert
   const deleteAlert = (alertId) => {
-    setAlerts((prevAlerts) => prevAlerts.filter((alert) => alert.id !== alertId))
-  }
+    setAlerts((prevAlerts) =>
+      prevAlerts.filter((alert) => alert.id !== alertId)
+    );
+  };
 
   // Toggle Do Not Disturb
   const toggleDoNotDisturb = () => {
-    setDoNotDisturb((prev) => !prev)
-  }
+    setDoNotDisturb((prev) => !prev);
+  };
 
   // Add notification
   const addNotification = (notification) => {
@@ -339,22 +348,28 @@ export const AppProvider = ({ children }) => {
       timestamp: new Date().toISOString(),
       read: false,
       ...notification,
-    }
-    setNotifications((prev) => [newNotification, ...prev])
-    return newNotification
-  }
+    };
+    setNotifications((prev) => [newNotification, ...prev]);
+    return newNotification;
+  };
 
   // Mark notification as read
   const markNotificationAsRead = (notificationId) => {
     setNotifications((prev) =>
-      prev.map((notification) => (notification.id === notificationId ? { ...notification, read: true } : notification)),
-    )
-  }
+      prev.map((notification) =>
+        notification.id === notificationId
+          ? { ...notification, read: true }
+          : notification
+      )
+    );
+  };
 
   // Delete notification
   const deleteNotification = (notificationId) => {
-    setNotifications((prev) => prev.filter((notification) => notification.id !== notificationId))
-  }
+    setNotifications((prev) =>
+      prev.filter((notification) => notification.id !== notificationId)
+    );
+  };
 
   // Context value
   const value = {
@@ -383,17 +398,16 @@ export const AppProvider = ({ children }) => {
     deleteNotification,
     commodities: sampleCommodities,
     locations: sampleLocations,
-  }
+  };
 
-  return <AppContext.Provider value={value}>{children}</AppContext.Provider>
-}
+  return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
+};
 
 // Custom hook to use the app context
 export const useApp = () => {
-  const context = useContext(AppContext)
+  const context = useContext(AppContext);
   if (context === undefined) {
-    throw new Error("useApp must be used within an AppProvider")
+    throw new Error("useApp must be used within an AppProvider");
   }
-  return context
-}
-
+  return context;
+};

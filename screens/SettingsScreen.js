@@ -1,21 +1,32 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, Alert, Image, StatusBar, Platform } from "react-native"
-import { useTranslation } from "react-i18next"
-import { Ionicons } from "@expo/vector-icons"
-import AsyncStorage from "@react-native-async-storage/async-storage"
+import { useState } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  SafeAreaView,
+  Alert,
+  Image,
+  StatusBar,
+  Platform,
+} from "react-native";
+import { useTranslation } from "react-i18next";
+import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
-import Header from "../components/Header"
-import Card from "../components/Card"
-import Button from "../components/Button"
-import Dropdown from "../components/Dropdown"
-import ToggleSwitch from "../components/ToggleSwitch"
-import { COLORS, FONT, SPACING, SHADOWS } from "../theme"
-import { useApp } from "../context/AppContext"
+import Header from "../components/Header";
+import Card from "../components/Card";
+import Button from "../components/Button";
+import Dropdown from "../components/Dropdown";
+import ToggleSwitch from "../components/ToggleSwitch";
+import { COLORS, FONT, SPACING, SHADOWS } from "../theme";
+import { useApp } from "../context/AppContext";
 
 const SettingsScreen = ({ navigation }) => {
-  const { t } = useTranslation()
+  const { t } = useTranslation();
   const {
     user,
     logout,
@@ -26,18 +37,18 @@ const SettingsScreen = ({ navigation }) => {
     setSelectedCommodity,
     doNotDisturb,
     toggleDoNotDisturb,
-  } = useApp()
+  } = useApp();
 
-  const [defaultView, setDefaultView] = useState("dashboard")
-  const [dataUpdateFrequency, setDataUpdateFrequency] = useState("hourly")
-  const [notificationSound, setNotificationSound] = useState(true)
-  const [vibration, setVibration] = useState(true)
+  const [defaultView, setDefaultView] = useState("dashboard");
+  const [dataUpdateFrequency, setDataUpdateFrequency] = useState("hourly");
+  const [notificationSound, setNotificationSound] = useState(true);
+  const [vibration, setVibration] = useState(true);
 
   // Language options
   const languageOptions = [
     { label: "English", value: "en" },
     { label: "اردو", value: "ur" },
-  ]
+  ];
 
   // Default view options
   const defaultViewOptions = [
@@ -45,92 +56,110 @@ const SettingsScreen = ({ navigation }) => {
     { label: t("forecast.title"), value: "forecast" },
     { label: t("historical.title"), value: "historical" },
     { label: t("alerts.title"), value: "alerts" },
-  ]
+  ];
 
   // Data update frequency options
   const dataUpdateFrequencyOptions = [
     { label: t("settings.realTime"), value: "realtime" },
     { label: t("settings.hourly"), value: "hourly" },
     { label: t("settings.daily"), value: "daily" },
-  ]
+  ];
 
   // Commodity options
   const commodityOptions = commodities.map((commodity) => ({
     label: t("common.language") === "en" ? commodity.name : commodity.name_ur,
     value: commodity.id,
-  }))
+  }));
 
   // Handle logout
-  const handleLogout = () => {
-    Alert.alert(t("settings.confirmLogout"), t("settings.confirmLogoutMessage"), [
-      {
-        text: t("common.cancel"),
-        style: "cancel",
-      },
-      {
-        text: t("settings.logout"),
-        onPress: () => logout(),
-        style: "destructive",
-      },
-    ])
-  }
+  const handleLogout = async () => {
+    console.log("Logout button pressed");
+    try {
+      const result = await logout();
+      console.log("Logout result:", result);
+      if (result.success) {
+        console.log("Logout successful, navigating to Login");
+        // Reset to the root navigator's Login screen
+        navigation.getParent()?.reset({
+          index: 0,
+          routes: [{ name: "Main", state: { routes: [{ name: "Login" }] } }],
+        });
+      }
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
+  };
 
   // Handle clear data
   const handleClearData = () => {
-    Alert.alert(t("settings.confirmClearData"), t("settings.confirmClearDataMessage"), [
-      {
-        text: t("common.cancel"),
-        style: "cancel",
-      },
-      {
-        text: t("settings.clearData"),
-        onPress: () => {
-          // Clear all app data except user authentication
-          AsyncStorage.multiRemove([
-            "alerts",
-            "notifications",
-            "defaultView",
-            "dataUpdateFrequency",
-            "notificationSound",
-            "vibration",
-          ]).then(() => {
-            Alert.alert(t("settings.dataCleared"), t("settings.dataSuccessfullyCleared"))
-          })
+    Alert.alert(
+      t("settings.confirmClearData"),
+      t("settings.confirmClearDataMessage"),
+      [
+        {
+          text: t("common.cancel"),
+          style: "cancel",
         },
-        style: "destructive",
-      },
-    ])
-  }
+        {
+          text: t("settings.clearData"),
+          onPress: () => {
+            // Clear all app data except user authentication
+            AsyncStorage.multiRemove([
+              "alerts",
+              "notifications",
+              "defaultView",
+              "dataUpdateFrequency",
+              "notificationSound",
+              "vibration",
+            ]).then(() => {
+              Alert.alert(
+                t("settings.dataCleared"),
+                t("settings.dataSuccessfullyCleared")
+              );
+            });
+          },
+          style: "destructive",
+        },
+      ]
+    );
+  };
 
   // Handle reset settings
   const handleResetSettings = () => {
-    Alert.alert(t("settings.confirmResetSettings"), t("settings.confirmResetSettingsMessage"), [
-      {
-        text: t("common.cancel"),
-        style: "cancel",
-      },
-      {
-        text: t("settings.resetSettings"),
-        onPress: () => {
-          // Reset settings to defaults
-          setDefaultView("dashboard")
-          setDataUpdateFrequency("hourly")
-          setNotificationSound(true)
-          setVibration(true)
-          setSelectedCommodity(1)
-          Alert.alert(t("settings.settingsReset"), t("settings.settingsSuccessfullyReset"))
+    Alert.alert(
+      t("settings.confirmResetSettings"),
+      t("settings.confirmResetSettingsMessage"),
+      [
+        {
+          text: t("common.cancel"),
+          style: "cancel",
         },
-      },
-    ])
-  }
+        {
+          text: t("settings.resetSettings"),
+          onPress: () => {
+            // Reset settings to defaults
+            setDefaultView("dashboard");
+            setDataUpdateFrequency("hourly");
+            setNotificationSound(true);
+            setVibration(true);
+            setSelectedCommodity(1);
+            Alert.alert(
+              t("settings.settingsReset"),
+              t("settings.settingsSuccessfullyReset")
+            );
+          },
+        },
+      ]
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar backgroundColor={COLORS.primary} barStyle="light-content" />
       <Header title={t("settings.title")} showBackButton={false} />
 
-      <ScrollView 
-        style={styles.scrollView} 
+      <ScrollView
+        style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
@@ -145,15 +174,23 @@ const SettingsScreen = ({ navigation }) => {
               />
             </View>
             <View style={styles.profileInfo}>
-              <Text style={styles.profileName}>{user?.name || "Demo User"}</Text>
-              <Text style={styles.profilePhone}>{user?.phoneNumber || "03xx xxx xxxx"}</Text>
-              <Text style={styles.profileEmail}>{user?.email || "user@example.com"}</Text>
+              <Text style={styles.profileName}>
+                {user?.name || "Demo User"}
+              </Text>
+              <Text style={styles.profilePhone}>
+                {user?.phoneNumber || "03xx xxx xxxx"}
+              </Text>
+              <Text style={styles.profileEmail}>
+                {user?.email || "user@example.com"}
+              </Text>
             </View>
           </View>
 
           <TouchableOpacity style={styles.editProfileButton}>
             <Ionicons name="create-outline" size={18} color={COLORS.primary} />
-            <Text style={styles.editProfileText}>{t("settings.editProfile")}</Text>
+            <Text style={styles.editProfileText}>
+              {t("settings.editProfile")}
+            </Text>
           </TouchableOpacity>
         </Card>
 
@@ -172,7 +209,9 @@ const SettingsScreen = ({ navigation }) => {
           </View>
 
           <View style={styles.settingItem}>
-            <Text style={styles.settingLabel}>{t("settings.defaultCommodity")}</Text>
+            <Text style={styles.settingLabel}>
+              {t("settings.defaultCommodity")}
+            </Text>
             <Dropdown
               data={commodityOptions}
               value={selectedCommodity}
@@ -192,7 +231,9 @@ const SettingsScreen = ({ navigation }) => {
           </View>
 
           <View style={styles.settingItem}>
-            <Text style={styles.settingLabel}>{t("settings.dataUpdateFrequency")}</Text>
+            <Text style={styles.settingLabel}>
+              {t("settings.dataUpdateFrequency")}
+            </Text>
             <Dropdown
               data={dataUpdateFrequencyOptions}
               value={dataUpdateFrequency}
@@ -203,7 +244,9 @@ const SettingsScreen = ({ navigation }) => {
         </Card>
 
         {/* Notification Settings Section */}
-        <Text style={styles.sectionTitle}>{t("settings.notificationSettings")}</Text>
+        <Text style={styles.sectionTitle}>
+          {t("settings.notificationSettings")}
+        </Text>
 
         <Card style={styles.settingsCard}>
           <ToggleSwitch
@@ -237,8 +280,15 @@ const SettingsScreen = ({ navigation }) => {
             onPress={handleResetSettings}
             activeOpacity={0.7}
           >
-            <Ionicons name="refresh-outline" size={22} color={COLORS.primary} style={styles.actionIcon} />
-            <Text style={styles.actionButtonText}>{t("settings.resetSettings")}</Text>
+            <Ionicons
+              name="refresh-outline"
+              size={22}
+              color={COLORS.primary}
+              style={styles.actionIcon}
+            />
+            <Text style={styles.actionButtonText}>
+              {t("settings.resetSettings")}
+            </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -246,16 +296,29 @@ const SettingsScreen = ({ navigation }) => {
             onPress={handleClearData}
             activeOpacity={0.7}
           >
-            <Ionicons name="trash-outline" size={22} color={COLORS.primary} style={styles.actionIcon} />
-            <Text style={styles.actionButtonText}>{t("settings.clearData")}</Text>
+            <Ionicons
+              name="trash-outline"
+              size={22}
+              color={COLORS.primary}
+              style={styles.actionIcon}
+            />
+            <Text style={styles.actionButtonText}>
+              {t("settings.clearData")}
+            </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={styles.logoutButtonContainer}
             onPress={handleLogout}
             activeOpacity={0.7}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
-            <Ionicons name="log-out-outline" size={22} color={COLORS.white} style={styles.actionIcon} />
+            <Ionicons
+              name="log-out-outline"
+              size={22}
+              color={COLORS.white}
+              style={styles.actionIcon}
+            />
             <Text style={styles.logoutButtonText}>{t("settings.logout")}</Text>
           </TouchableOpacity>
         </Card>
@@ -263,16 +326,18 @@ const SettingsScreen = ({ navigation }) => {
         {/* Version Section */}
         <Card style={styles.versionCard}>
           <Text style={styles.versionText}>Version 1.0.0</Text>
-          
+
           <View style={styles.linksContainer}>
             <TouchableOpacity style={styles.linkButton}>
-              <Text style={styles.linkText}>{t("common.termsAndConditions")}</Text>
+              <Text style={styles.linkText}>
+                {t("common.termsAndConditions")}
+              </Text>
             </TouchableOpacity>
-            
+
             <TouchableOpacity style={styles.linkButton}>
               <Text style={styles.linkText}>{t("common.privacyPolicy")}</Text>
             </TouchableOpacity>
-            
+
             <TouchableOpacity style={styles.linkButton}>
               <Text style={styles.linkText}>{t("common.contactSupport")}</Text>
             </TouchableOpacity>
@@ -280,8 +345,8 @@ const SettingsScreen = ({ navigation }) => {
         </Card>
       </ScrollView>
     </SafeAreaView>
-  )
-}
+  );
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -369,24 +434,23 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.medium,
   },
   actionsCard: {
-    padding: 0,  // Remove padding for card
+    padding: 0, // Remove padding for card
     backgroundColor: COLORS.white,
     borderRadius: 10,
-    overflow: 'hidden',
+    overflow: "hidden",
     marginBottom: SPACING.large,
-    ...(Platform.OS === 'ios' 
-      ? SHADOWS.medium 
-      : { 
+    ...(Platform.OS === "ios"
+      ? SHADOWS.medium
+      : {
           elevation: 4,
           shadowColor: "#000",
           borderWidth: 0.2,
           borderColor: COLORS.border,
-        }
-    ),
+        }),
   },
   actionButtonContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     padding: SPACING.large,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
@@ -398,22 +462,22 @@ const styles = StyleSheet.create({
   actionButtonText: {
     color: COLORS.primary,
     fontSize: FONT.sizes.medium,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   logoutButtonContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     padding: SPACING.large,
     backgroundColor: COLORS.accent,
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   logoutButtonText: {
     color: COLORS.white,
     fontSize: FONT.sizes.medium,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   versionCard: {
-    alignItems: 'center',
+    alignItems: "center",
     padding: SPACING.large,
   },
   versionText: {
@@ -422,8 +486,8 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.large,
   },
   linksContainer: {
-    width: '100%',
-    alignItems: 'center',
+    width: "100%",
+    alignItems: "center",
   },
   linkButton: {
     paddingVertical: SPACING.small,
@@ -431,9 +495,8 @@ const styles = StyleSheet.create({
   linkText: {
     color: COLORS.primary,
     fontSize: FONT.sizes.medium,
-    textAlign: 'center',
+    textAlign: "center",
   },
-})
+});
 
-export default SettingsScreen
-
+export default SettingsScreen;
