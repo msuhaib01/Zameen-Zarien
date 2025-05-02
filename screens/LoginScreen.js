@@ -1,6 +1,6 @@
-"use client"
+"use client";
 
-import { useState } from "react"
+import { useState } from "react";
 import {
   View,
   Text,
@@ -13,87 +13,93 @@ import {
   SafeAreaView,
   StatusBar,
   Dimensions,
-} from "react-native"
-import { useTranslation } from "react-i18next"
-import { Ionicons } from "@expo/vector-icons"
+} from "react-native";
+import { useTranslation } from "react-i18next";
+import { Ionicons } from "@expo/vector-icons";
 
-import Header from "../components/Header"
-import Input from "../components/Input"
-import Button from "../components/Button"
-import Card from "../components/Card"
-import { COLORS, FONT, SPACING, SHADOWS } from "../theme"
-import { useApp } from "../context/AppContext"
+import Header from "../components/Header";
+import Input from "../components/Input";
+import Button from "../components/Button";
+import Card from "../components/Card";
+import { COLORS, FONT, SPACING, SHADOWS } from "../theme";
+import { useApp } from "../context/AppContext";
 
-const screenWidth = Dimensions.get('window').width;
+const screenWidth = Dimensions.get("window").width;
 const isSmallScreen = screenWidth < 360;
 
 const LoginScreen = ({ navigation }) => {
-  const { t, i18n } = useTranslation()
-  const { login, changeLanguage } = useApp()
-  const [phoneNumber, setPhoneNumber] = useState("")
-  const [password, setPassword] = useState("")
-  const [showPassword, setShowPassword] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState("")
+  const { t, i18n } = useTranslation();
+  const { login, changeLanguage } = useApp();
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const handleLogin = async () => {
     if (!phoneNumber || !password) {
-      setError(t("validation.allFieldsRequired"))
-      return
+      setError(t("validation.allFieldsRequired"));
+      return;
     }
 
-    setLoading(true)
-    setError("")
+    setLoading(true);
+    setError("");
 
     try {
-      const result = await login(phoneNumber, password)
+      const result = await login(phoneNumber, password);
       if (!result.success) {
-        setError(result.error || t("auth.loginFailed"))
+        setError(result.error || t("auth.loginFailed"));
       }
     } catch (error) {
-      setError(t("errors.general"))
+      setError(t("errors.general"));
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const toggleLanguage = () => {
-    const newLang = i18n.language === "en" ? "ur" : "en"
-    changeLanguage(newLang)
-  }
+    const newLang = i18n.language === "en" ? "ur" : "en";
+    changeLanguage(newLang);
+  };
 
   // Create language toggle component for header
   const HeaderRight = () => (
-    <TouchableOpacity 
-      style={styles.languageToggle} 
+    <TouchableOpacity
+      style={styles.languageToggle}
       onPress={toggleLanguage}
       hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
     >
-      <Text style={styles.languageText}>{i18n.language === "en" ? "اردو" : "English"}</Text>
+      <Text style={styles.languageText}>
+        {i18n.language === "en" ? "اردو" : "English"}
+      </Text>
     </TouchableOpacity>
   );
-  
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar backgroundColor={COLORS.primary} barStyle="light-content" />
-      <Header 
-        title={t("common.appName")} 
-        showBackButton={false} 
+      <Header
+        title={t("common.appName")}
+        showBackButton={false}
         rightComponent={<HeaderRight />}
       />
-      
-      <KeyboardAvoidingView 
-        behavior={Platform.OS === "ios" ? "padding" : "height"} 
+
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.keyboardAvoidingView}
         keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
       >
-        <ScrollView 
-          contentContainerStyle={styles.scrollContainer} 
+        <ScrollView
+          contentContainerStyle={styles.scrollContainer}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.logoContainer}>
-            <Image source={require("../assets/logo-placeholder.png")} style={styles.logo} resizeMode="contain" />
+            <Image
+              source={require("../assets/logo-placeholder.png")}
+              style={styles.logo}
+              resizeMode="contain"
+            />
           </View>
 
           <Card style={styles.formCard}>
@@ -120,42 +126,46 @@ const LoginScreen = ({ navigation }) => {
                   secureTextEntry={!showPassword}
                   style={styles.passwordInput}
                 />
-                <TouchableOpacity 
-                  style={styles.eyeIcon} 
+                <TouchableOpacity
+                  style={styles.eyeIcon}
                   onPress={() => setShowPassword(!showPassword)}
                   hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 >
-                  <Ionicons 
-                    name={showPassword ? "eye-off-outline" : "eye-outline"} 
-                    size={24} 
-                    color={COLORS.gray} 
+                  <Ionicons
+                    name={showPassword ? "eye-off-outline" : "eye-outline"}
+                    size={24}
+                    color={COLORS.gray}
                   />
                 </TouchableOpacity>
               </View>
 
-              <TouchableOpacity 
-                style={styles.forgotPassword} 
+              <TouchableOpacity
+                style={styles.forgotPassword}
                 onPress={() => navigation.navigate("ForgotPassword")}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               >
-                <Text style={styles.forgotPasswordText}>{t("auth.forgotPassword")}</Text>
+                <Text style={styles.forgotPasswordText}>
+                  {t("auth.forgotPassword")}
+                </Text>
               </TouchableOpacity>
 
-              <Button 
-                title={t("common.login")} 
-                onPress={handleLogin} 
-                loading={loading} 
-                style={styles.loginButton} 
+              <Button
+                title={t("common.login")}
+                onPress={handleLogin}
+                loading={loading}
+                style={styles.loginButton}
                 size="large"
               />
 
               <View style={styles.registerContainer}>
                 <Text style={styles.registerText}>{t("auth.noAccount")}</Text>
-                <TouchableOpacity 
-                  onPress={() => navigation.navigate("Register")}
+                <TouchableOpacity
+                  onPress={() => navigation.navigate("PhoneVerification")}
                   hitSlop={{ top: 10, bottom: 10, left: 5, right: 5 }}
                 >
-                  <Text style={styles.registerLink}>{t("common.register")}</Text>
+                  <Text style={styles.registerLink}>
+                    {t("common.register")}
+                  </Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -173,8 +183,8 @@ const LoginScreen = ({ navigation }) => {
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
-  )
-}
+  );
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -194,12 +204,12 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
     borderRadius: 8,
     minWidth: 70,
-    alignItems: 'center',
+    alignItems: "center",
   },
   languageText: {
     color: COLORS.primary,
     fontWeight: "bold",
-    textAlign: 'center',
+    textAlign: "center",
   },
   logoContainer: {
     alignItems: "center",
@@ -208,14 +218,14 @@ const styles = StyleSheet.create({
     height: isSmallScreen ? 130 : 160,
     borderRadius: isSmallScreen ? 65 : 80,
     backgroundColor: COLORS.white,
-    justifyContent: 'center',
-    alignSelf: 'center',
+    justifyContent: "center",
+    alignSelf: "center",
     elevation: 5,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   logo: {
     width: isSmallScreen ? 120 : 150,
@@ -253,8 +263,8 @@ const styles = StyleSheet.create({
     transform: [{ translateY: -12 }],
     width: 40,
     height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     zIndex: 1,
   },
   forgotPassword: {
@@ -269,15 +279,14 @@ const styles = StyleSheet.create({
   loginButton: {
     marginVertical: SPACING.large,
     backgroundColor: COLORS.primary,
-    alignSelf: 'stretch',
+    alignSelf: "stretch",
     minHeight: 50,
-    ...(Platform.OS === 'ios' 
-      ? SHADOWS.medium 
-      : { 
+    ...(Platform.OS === "ios"
+      ? SHADOWS.medium
+      : {
           elevation: 3,
           shadowColor: "#000",
-        }
-    ),
+        }),
   },
   registerContainer: {
     flexDirection: "row",
@@ -301,9 +310,8 @@ const styles = StyleSheet.create({
   supportText: {
     color: COLORS.text.secondary,
     fontSize: FONT.sizes.small,
-    textDecorationLine: 'underline',
+    textDecorationLine: "underline",
   },
-})
+});
 
-export default LoginScreen
-
+export default LoginScreen;
