@@ -260,26 +260,48 @@ export const AppProvider = ({ children }) => {
 
   // Login function
   const login = async (phoneNumber, password) => {
-    // In a real app, you would make an API call to authenticate
-    // For demo purposes, we'll just set a mock user
+    console.log("Starting login process...");
+    console.log("Phone number:", phoneNumber);
     setIsLoading(true);
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      console.log("Making API request to login endpoint...");
+      const response = await fetch(
+        "http://localhost:8000/auth/password-login/",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            phone_number: phoneNumber,
+            password: password,
+          }),
+        }
+      );
 
-      // Mock successful login
-      const userData = {
-        id: 1,
-        phoneNumber,
-        name: "Demo User",
-        email: "user@example.com",
-      };
+      console.log("Response status:", response.status);
+      const data = await response.json();
+      console.log("Response data:", data);
 
-      setUser(userData);
+      if (!response.ok) {
+        console.error("Login failed:", data.error);
+        throw new Error(data.error || "Login failed");
+      }
+
+      console.log("Login successful, storing token and user data...");
+      // Store token and user data
+      await AsyncStorage.setItem("token", data.token);
+      await AsyncStorage.setItem("user", JSON.stringify(data.user));
+
+      console.log("Updating app state with user data...");
+      setUser(data.user);
+      console.log("Login process completed successfully");
       return { success: true };
     } catch (error) {
+      console.error("Error during login:", error);
       return { success: false, error: error.message };
     } finally {
+      console.log("Cleaning up loading state...");
       setIsLoading(false);
     }
   };
