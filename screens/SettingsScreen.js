@@ -175,22 +175,23 @@ const SettingsScreen = ({ navigation }) => {
             </View>
             <View style={styles.profileInfo}>
               <Text style={styles.profileName}>
-                {user?.name || "Demo User"}
+                {user?.full_name || "Not set"}
               </Text>
               <Text style={styles.profilePhone}>
-                {user?.phoneNumber || "03xx xxx xxxx"}
+                {user?.phone_number || "Not set"}
               </Text>
               <Text style={styles.profileEmail}>
-                {user?.email || "user@example.com"}
+                {user?.email || "Not set"}
               </Text>
             </View>
           </View>
 
-          <TouchableOpacity style={styles.editProfileButton}>
+          <TouchableOpacity
+            style={styles.editProfileButton}
+            onPress={() => navigation.navigate("EditProfile")}
+          >
             <Ionicons name="create-outline" size={18} color={COLORS.primary} />
-            <Text style={styles.editProfileText}>
-              {t("settings.editProfile")}
-            </Text>
+            <Text style={styles.editProfileText}>Edit Profile</Text>
           </TouchableOpacity>
         </Card>
 
