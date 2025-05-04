@@ -31,7 +31,7 @@ const isSmallScreen = screenWidth < 360;
 
 const RegisterScreen = ({ navigation }) => {
   const { t, i18n } = useTranslation()
-  const { login, changeLanguage } = useApp()
+  const { login, changeLanguage, commodities } = useApp()
 
   // Form state
   const [name, setName] = useState("")
@@ -56,13 +56,10 @@ const RegisterScreen = ({ navigation }) => {
   })
 
   // Commodity options for dropdown
-  const commodityOptions = [
-    { label: t("common.language") === "en" ? "Wheat" : "گندم", value: 1 },
-    { label: t("common.language") === "en" ? "Rice" : "چاول", value: 2 },
-    { label: t("common.language") === "en" ? "Cotton" : "کپاس", value: 3 },
-    { label: t("common.language") === "en" ? "Sugarcane" : "گنا", value: 4 },
-    { label: t("common.language") === "en" ? "Maize" : "مکئی", value: 5 },
-  ]
+  const commodityOptions = commodities.map((commodity) => ({
+    label: t("common.language") === "en" ? commodity.name : commodity.name_ur,
+    value: commodity.id,
+  }))
 
   // Validate form
   const validateForm = () => {
@@ -163,8 +160,8 @@ const RegisterScreen = ({ navigation }) => {
 
   // Create language toggle component for header
   const HeaderRight = () => (
-    <TouchableOpacity 
-      style={styles.languageToggle} 
+    <TouchableOpacity
+      style={styles.languageToggle}
       onPress={toggleLanguage}
       hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
     >
@@ -175,20 +172,20 @@ const RegisterScreen = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar backgroundColor={COLORS.primary} barStyle="light-content" />
-      <Header 
-        title={t("common.appName")} 
-        showBackButton={true} 
+      <Header
+        title={t("common.appName")}
+        showBackButton={true}
         rightComponent={<HeaderRight />}
         onBackPress={() => navigation.goBack()}
       />
-      
-      <KeyboardAvoidingView 
-        behavior={Platform.OS === "ios" ? "padding" : "height"} 
+
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.keyboardAvoidingView}
         keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
       >
-        <ScrollView 
-          contentContainerStyle={styles.scrollContainer} 
+        <ScrollView
+          contentContainerStyle={styles.scrollContainer}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
@@ -239,15 +236,15 @@ const RegisterScreen = ({ navigation }) => {
                   error={errors.password}
                   style={styles.passwordInput}
                 />
-                <TouchableOpacity 
-                  style={styles.eyeIcon} 
+                <TouchableOpacity
+                  style={styles.eyeIcon}
                   onPress={() => setShowPassword(!showPassword)}
                   hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 >
-                  <Ionicons 
-                    name={showPassword ? "eye-off-outline" : "eye-outline"} 
-                    size={24} 
-                    color={COLORS.gray} 
+                  <Ionicons
+                    name={showPassword ? "eye-off-outline" : "eye-outline"}
+                    size={24}
+                    color={COLORS.gray}
                   />
                 </TouchableOpacity>
               </View>
@@ -262,15 +259,15 @@ const RegisterScreen = ({ navigation }) => {
                   error={errors.confirmPassword}
                   style={styles.passwordInput}
                 />
-                <TouchableOpacity 
-                  style={styles.eyeIcon} 
+                <TouchableOpacity
+                  style={styles.eyeIcon}
                   onPress={() => setShowConfirmPassword(!showConfirmPassword)}
                   hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 >
-                  <Ionicons 
-                    name={showConfirmPassword ? "eye-off-outline" : "eye-outline"} 
-                    size={24} 
-                    color={COLORS.gray} 
+                  <Ionicons
+                    name={showConfirmPassword ? "eye-off-outline" : "eye-outline"}
+                    size={24}
+                    color={COLORS.gray}
                   />
                 </TouchableOpacity>
               </View>
@@ -284,8 +281,8 @@ const RegisterScreen = ({ navigation }) => {
               />
 
               <View style={styles.termsContainer}>
-                <TouchableOpacity 
-                  style={styles.checkbox} 
+                <TouchableOpacity
+                  style={styles.checkbox}
                   onPress={() => setAgreeToTerms(!agreeToTerms)}
                   hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 >
@@ -293,7 +290,7 @@ const RegisterScreen = ({ navigation }) => {
                 </TouchableOpacity>
                 <View style={styles.termsTextContainer}>
                   <Text style={styles.termsText}>{t("auth.agreeToTerms")} </Text>
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     onPress={() => {
                       /* Navigate to terms and conditions */
                     }}
@@ -305,17 +302,17 @@ const RegisterScreen = ({ navigation }) => {
               </View>
               {errors.terms ? <Text style={styles.termsError}>{errors.terms}</Text> : null}
 
-              <Button 
-                title={t("common.register")} 
-                onPress={handleRegister} 
-                loading={loading} 
-                style={styles.registerButton} 
+              <Button
+                title={t("common.register")}
+                onPress={handleRegister}
+                loading={loading}
+                style={styles.registerButton}
                 size="large"
               />
 
               <View style={styles.loginContainer}>
                 <Text style={styles.loginText}>{t("auth.alreadyHaveAccount")}</Text>
-                <TouchableOpacity 
+                <TouchableOpacity
                   onPress={() => navigation.navigate("Login")}
                   hitSlop={{ top: 10, bottom: 10, left: 5, right: 5 }}
                 >
@@ -439,9 +436,9 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary,
     alignSelf: 'stretch',
     minHeight: 50,
-    ...(Platform.OS === 'ios' 
-      ? SHADOWS.medium 
-      : { 
+    ...(Platform.OS === 'ios'
+      ? SHADOWS.medium
+      : {
           elevation: 3,
           shadowColor: "#000",
         }
