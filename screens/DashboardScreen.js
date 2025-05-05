@@ -91,6 +91,7 @@ const DashboardScreen = ({ navigation }) => {
     { label: t("dashboard.week"), value: "week" },
     { label: t("dashboard.month"), value: "month" },
     { label: t("dashboard.year"), value: "year" },
+    { label: t("dashboard.threeYears") || "3 Years", value: "threeYears" },
   ];
 
   // Commodity options
@@ -229,6 +230,9 @@ const DashboardScreen = ({ navigation }) => {
       case "year":
         // Already set to January 1, 2023
         break;
+      case "threeYears":
+        start = new Date(2021, 0, 1); // January 1, 2021 (3 years)
+        break;
       default:
         start = new Date(2023, 11, 24); // Default to week (December 24, 2023)
     }
@@ -322,7 +326,9 @@ const DashboardScreen = ({ navigation }) => {
     let chartData = [...priceData.history];
 
     // If we have too many data points, we need to sample them to avoid overcrowding the chart
-    const MAX_DATA_POINTS = 15;
+    // Use more data points for 3-year view
+    const MAX_DATA_POINTS = timePeriod === "threeYears" ? 36 : 15;
+
     if (chartData.length > MAX_DATA_POINTS) {
       // Sample the data to get a reasonable number of points
       const step = Math.ceil(chartData.length / MAX_DATA_POINTS);
@@ -345,7 +351,30 @@ const DashboardScreen = ({ navigation }) => {
     // Format the dates for display
     const formatChartDate = (dateStr) => {
       const date = new Date(dateStr);
-      return `${date.getDate()}/${date.getMonth() + 1}`;
+      if (timePeriod === "threeYears") {
+        // For 3-year view, show month/year (e.g., "Jan/21")
+        const monthNames = [
+          "Jan",
+          "Feb",
+          "Mar",
+          "Apr",
+          "May",
+          "Jun",
+          "Jul",
+          "Aug",
+          "Sep",
+          "Oct",
+          "Nov",
+          "Dec",
+        ];
+        return `${monthNames[date.getMonth()]}/${date
+          .getFullYear()
+          .toString()
+          .substr(2, 2)}`;
+      } else {
+        // For other views, show day/month (e.g., "15/4")
+        return `${date.getDate()}/${date.getMonth() + 1}`;
+      }
     };
 
     return {
@@ -591,20 +620,21 @@ const DashboardScreen = ({ navigation }) => {
                 <LineChart
                   data={getChartData()}
                   width={screenWidth - 40}
-                  height={220}
+                  height={timePeriod === "threeYears" ? 280 : 220}
                   chartConfig={chartConfig}
                   bezier
                   style={styles.chart}
                   yAxisSuffix=" PKR"
                   yAxisInterval={1}
                   fromZero={true}
-                  withDots={true}
+                  withDots={timePeriod !== "threeYears"} // Hide dots for 3-year view to reduce clutter
                   withInnerLines={true}
                   withOuterLines={true}
-                  withVerticalLines={true}
+                  withVerticalLines={timePeriod !== "threeYears"} // Hide vertical lines for 3-year view
                   withHorizontalLines={true}
                   withVerticalLabels={true}
                   withHorizontalLabels={true}
+                  horizontalLabelRotation={timePeriod === "threeYears" ? 45 : 0} // Rotate labels for 3-year view
                 />
               ) : (
                 <View style={styles.noDataContainer}>
