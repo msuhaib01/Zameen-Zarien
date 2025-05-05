@@ -1,25 +1,62 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, SafeAreaView, Platform, ActivityIndicator } from "react-native"
-import { useTranslation } from "react-i18next"
-import { Ionicons } from "@expo/vector-icons"
-import { LineChart } from "react-native-chart-kit"
-import { Dimensions } from "react-native"
-import DateTimePicker from "@react-native-community/datetimepicker"
+import { useState, useEffect } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  RefreshControl,
+  SafeAreaView,
+  Platform,
+  ActivityIndicator,
+  TextInput,
+} from "react-native";
+import { useTranslation } from "react-i18next";
+import { Ionicons } from "@expo/vector-icons";
+import { LineChart } from "react-native-chart-kit";
+import { Dimensions } from "react-native";
+import DateTimePicker from "@react-native-community/datetimepicker";
 
-import Header from "../components/Header"
-import Card from "../components/Card"
-import Button from "../components/Button"
-import Dropdown from "../components/Dropdown"
-import { COLORS, FONT, SPACING, SHADOWS } from "../theme"
-import { useApp } from "../context/AppContext"
-import { getPriceHistory } from "../services/cropPricesService"
+import Header from "../components/Header";
+import Card from "../components/Card";
+import Button from "../components/Button";
+import Dropdown from "../components/Dropdown";
+import { COLORS, FONT, SPACING, SHADOWS } from "../theme";
+import { useApp } from "../context/AppContext";
+import {
+  getPriceHistory,
+  checkApiAvailability,
+} from "../services/cropPricesService";
 
-const screenWidth = Dimensions.get("window").width
+const screenWidth = Dimensions.get("window").width;
+
+// Format date for input field (YYYY-MM-DD)
+const formatDateForInput = (date) => {
+  if (!date) return "";
+  const d = new Date(date);
+  const month = `${d.getMonth() + 1}`.padStart(2, "0");
+  const day = `${d.getDate()}`.padStart(2, "0");
+  return `${d.getFullYear()}-${month}-${day}`;
+};
+
+// Parse date from input field
+const parseDateFromInput = (dateString) => {
+  if (!dateString) return new Date();
+  try {
+    const [year, month, day] = dateString
+      .split("-")
+      .map((num) => parseInt(num, 10));
+    return new Date(year, month - 1, day);
+  } catch (error) {
+    console.error("Error parsing date:", error);
+    return new Date();
+  }
+};
 
 const DashboardScreen = ({ navigation }) => {
-  const { t } = useTranslation()
+  const { t } = useTranslation();
   const {
     commodities,
     selectedCommodity,
@@ -33,14 +70,20 @@ const DashboardScreen = ({ navigation }) => {
     setStartDate,
     endDate,
     setEndDate,
-    getCommodityData
-  } = useApp()
+    getCommodityData,
+  } = useApp();
 
-  const [refreshing, setRefreshing] = useState(false)
-  const [priceData, setPriceData] = useState(null)
-  const [isDataLoading, setIsDataLoading] = useState(false)
-  const [showStartDatePicker, setShowStartDatePicker] = useState(false)
-  const [showEndDatePicker, setShowEndDatePicker] = useState(false)
+  const [refreshing, setRefreshing] = useState(false);
+  const [priceData, setPriceData] = useState(null);
+  const [isDataLoading, setIsDataLoading] = useState(false);
+  const [showStartDatePicker, setShowStartDatePicker] = useState(false);
+  const [showEndDatePicker, setShowEndDatePicker] = useState(false);
+  const [isApiAvailable, setIsApiAvailable] = useState(true);
+  const [startDateInput, setStartDateInput] = useState(
+    formatDateForInput(startDate)
+  );
+  const [endDateInput, setEndDateInput] = useState(formatDateForInput(endDate));
+  const [isWebPlatform] = useState(Platform.OS === "web");
 
   // Time period options
   const timePeriodOptions = [
@@ -48,138 +91,265 @@ const DashboardScreen = ({ navigation }) => {
     { label: t("dashboard.week"), value: "week" },
     { label: t("dashboard.month"), value: "month" },
     { label: t("dashboard.year"), value: "year" },
-  ]
+  ];
 
   // Commodity options
   const commodityOptions = commodities.map((commodity) => ({
     label: t("common.language") === "en" ? commodity.name : commodity.name_ur,
     value: commodity.id,
-  }))
+  }));
 
   // Location options
   const locationOptions = locations.map((location) => ({
     label: t("common.language") === "en" ? location.name : location.name_ur,
     value: location.id,
-  }))
+  }));
+
+  // Check API availability when component mounts
+  useEffect(() => {
+    const checkApi = async () => {
+      const result = await checkApiAvailability();
+      setIsApiAvailable(result.available);
+
+      if (!result.available) {
+        console.error("API is not available:", result.error);
+        alert(t("errors.apiNotAvailable", { error: result.error }));
+      }
+    };
+
+    // Set initial date range to 2023 for better chance of having data
+    const end = new Date(2023, 11, 31); // December 31, 2023
+    const start = new Date(2023, 0, 1); // January 1, 2023
+    setStartDate(start);
+    setEndDate(end);
+    setStartDateInput(formatDateForInput(start));
+    setEndDateInput(formatDateForInput(end));
+
+    checkApi();
+  }, []);
 
   // Load price data when selected commodity or date range changes
   useEffect(() => {
-    loadPriceData()
-  }, [selectedCommodity, selectedLocation, startDate, endDate])
+    if (isApiAvailable) {
+      loadPriceData();
+    } else {
+      // Use sample data if API is not available
+      const data = getCommodityData(selectedCommodity);
+      setPriceData(data);
+    }
+  }, [selectedCommodity, selectedLocation, startDate, endDate, isApiAvailable]);
 
   // Load price data
   const loadPriceData = async () => {
     try {
-      setIsDataLoading(true)
+      setIsDataLoading(true);
 
-      // Format dates for API
-      const formattedStartDate = startDate.toISOString().split('T')[0]
-      const formattedEndDate = endDate.toISOString().split('T')[0]
+      // Check if API is available
+      if (!isApiAvailable) {
+        console.warn("API is not available, using sample data");
+        const data = getCommodityData(selectedCommodity);
+        setPriceData(data);
+        return;
+      }
 
       // Get commodity and location names
-      const commodityName = commodities.find(c => c.id === selectedCommodity)?.name
-      const locationName = locations.find(l => l.id === selectedLocation)?.name
+      const commodityName = commodities.find(
+        (c) => c.id === selectedCommodity
+      )?.name;
+      const locationName = locations.find(
+        (l) => l.id === selectedLocation
+      )?.name;
 
-      if (commodityName && locationName) {
-        // Fetch data from API
-        const data = await getPriceHistory(
-          commodityName,
-          locationName,
-          formattedStartDate,
-          formattedEndDate
-        )
-
-        // Transform data for display
-        const transformedData = {
-          current: data.stats.current || 0,
-          highest: data.stats.highest || 0,
-          lowest: data.stats.lowest || 0,
-          average: data.stats.average || 0,
-          history: data.data || []
-        }
-
-        setPriceData(transformedData)
-      } else {
-        // Fallback to sample data if names not found
-        const data = getCommodityData(selectedCommodity)
-        setPriceData(data)
+      if (!commodityName || !locationName) {
+        throw new Error("Selected commodity or location not found");
       }
+
+      // Fetch data from API
+      const data = await getPriceHistory(
+        commodityName,
+        locationName,
+        startDate,
+        endDate
+      );
+
+      // Transform data for display
+      const transformedData = {
+        current: data.stats.current || 0,
+        highest: data.stats.highest || 0,
+        lowest: data.stats.lowest || 0,
+        average: data.stats.average || 0,
+        history: data.data || [],
+      };
+
+      // Check if we have data
+      if (transformedData.history.length === 0) {
+        console.warn("No price data available for the selected criteria");
+        // Show a message to the user, but don't use alert as it's disruptive
+        console.log(
+          `No data available for ${commodityName} in ${locationName} from ${formatDate(
+            startDate
+          )} to ${formatDate(endDate)}`
+        );
+
+        // We'll still set the data, but the chart will show a "No data available" message
+      }
+
+      setPriceData(transformedData);
     } catch (error) {
-      console.error("Error loading price data:", error)
+      console.error("Error loading price data:", error);
+
+      // Show a more user-friendly error message
+      alert(t("errors.dataLoadFailed", { error: error.message }));
+
       // Fallback to sample data on error
-      const data = getCommodityData(selectedCommodity)
-      setPriceData(data)
+      const data = getCommodityData(selectedCommodity);
+      setPriceData(data);
     } finally {
-      setIsDataLoading(false)
+      setIsDataLoading(false);
     }
-  }
+  };
 
   // Apply a predefined date range based on time period
   const applyTimePeriod = (period) => {
-    const end = new Date()
-    let start = new Date()
+    // Use a date range that's more likely to have data
+    // For testing purposes, we'll use dates from 2023
+    const end = new Date(2023, 11, 31); // December 31, 2023
+    let start = new Date(2023, 0, 1); // January 1, 2023
 
     switch (period) {
-      case 'day':
-        start.setDate(end.getDate() - 1)
-        break
-      case 'week':
-        start.setDate(end.getDate() - 7)
-        break
-      case 'month':
-        start.setMonth(end.getMonth() - 1)
-        break
-      case 'year':
-        start.setFullYear(end.getFullYear() - 1)
-        break
+      case "day":
+        start = new Date(2023, 11, 30); // December 30, 2023
+        break;
+      case "week":
+        start = new Date(2023, 11, 24); // December 24, 2023
+        break;
+      case "month":
+        start = new Date(2023, 10, 30); // November 30, 2023
+        break;
+      case "year":
+        // Already set to January 1, 2023
+        break;
       default:
-        start.setDate(end.getDate() - 7) // Default to week
+        start = new Date(2023, 11, 24); // Default to week (December 24, 2023)
     }
 
-    setStartDate(start)
-    setEndDate(end)
-    setTimePeriod(period)
-  }
+    setStartDate(start);
+    setEndDate(end);
+    setTimePeriod(period);
+
+    // Update input fields for web
+    setStartDateInput(formatDateForInput(start));
+    setEndDateInput(formatDateForInput(end));
+  };
 
   // Handle date change
   const onStartDateChange = (event, selectedDate) => {
-    const currentDate = selectedDate || startDate
-    setShowStartDatePicker(Platform.OS === "ios")
-    setStartDate(currentDate)
-  }
+    const currentDate = selectedDate || startDate;
+    setShowStartDatePicker(Platform.OS === "ios");
+    setStartDate(currentDate);
+    setStartDateInput(formatDateForInput(currentDate));
+  };
 
   const onEndDateChange = (event, selectedDate) => {
-    const currentDate = selectedDate || endDate
-    setShowEndDatePicker(Platform.OS === "ios")
-    setEndDate(currentDate)
-  }
+    const currentDate = selectedDate || endDate;
+    setShowEndDatePicker(Platform.OS === "ios");
+    setEndDate(currentDate);
+    setEndDateInput(formatDateForInput(currentDate));
+  };
+
+  // Handle web date input change
+  const handleStartDateInputChange = (text) => {
+    setStartDateInput(text);
+    try {
+      const date = parseDateFromInput(text);
+      if (!isNaN(date.getTime()) && date <= endDate) {
+        setStartDate(date);
+      }
+    } catch (error) {
+      console.error("Invalid date format:", error);
+    }
+  };
+
+  const handleEndDateInputChange = (text) => {
+    setEndDateInput(text);
+    try {
+      const date = parseDateFromInput(text);
+      if (!isNaN(date.getTime()) && date >= startDate && date <= new Date()) {
+        setEndDate(date);
+      }
+    } catch (error) {
+      console.error("Invalid date format:", error);
+    }
+  };
 
   // Format date for display
   const formatDate = (date) => {
-    return `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`
-  }
+    return `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
+  };
 
   // Handle refresh
   const onRefresh = async () => {
-    setRefreshing(true)
-    // In a real app, you would fetch fresh data here
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-    loadPriceData()
-    setRefreshing(false)
-  }
+    setRefreshing(true);
+
+    try {
+      // Check API availability on refresh
+      const apiStatus = await checkApiAvailability();
+      setIsApiAvailable(apiStatus.available);
+
+      if (apiStatus.available) {
+        // If API is available, load fresh data
+        await loadPriceData();
+      } else {
+        // If API is not available, show message and use sample data
+        console.warn("API is not available on refresh, using sample data");
+        alert(t("errors.apiNotAvailable", { error: apiStatus.error }));
+        const data = getCommodityData(selectedCommodity);
+        setPriceData(data);
+      }
+    } catch (error) {
+      console.error("Error during refresh:", error);
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   // Prepare chart data
   const getChartData = () => {
-    if (!priceData || !priceData.history) return null
+    if (!priceData || !priceData.history || priceData.history.length === 0)
+      return null;
 
-    // Get the last 7 days of data for the chart
-    const chartData = priceData.history.slice(-7)
+    // Get all data points from the selected date range
+    let chartData = [...priceData.history];
+
+    // If we have too many data points, we need to sample them to avoid overcrowding the chart
+    const MAX_DATA_POINTS = 15;
+    if (chartData.length > MAX_DATA_POINTS) {
+      // Sample the data to get a reasonable number of points
+      const step = Math.ceil(chartData.length / MAX_DATA_POINTS);
+      const sampledData = [];
+
+      for (let i = 0; i < chartData.length; i += step) {
+        sampledData.push(chartData[i]);
+      }
+
+      // Always include the last data point
+      if (
+        sampledData[sampledData.length - 1] !== chartData[chartData.length - 1]
+      ) {
+        sampledData.push(chartData[chartData.length - 1]);
+      }
+
+      chartData = sampledData;
+    }
+
+    // Format the dates for display
+    const formatChartDate = (dateStr) => {
+      const date = new Date(dateStr);
+      return `${date.getDate()}/${date.getMonth() + 1}`;
+    };
 
     return {
-      labels: chartData.map((item) => {
-        const date = new Date(item.date)
-        return `${date.getDate()}/${date.getMonth() + 1}`
-      }),
+      labels: chartData.map((item) => formatChartDate(item.date)),
       datasets: [
         {
           data: chartData.map((item) => item.price),
@@ -188,34 +358,52 @@ const DashboardScreen = ({ navigation }) => {
         },
       ],
       legend: [t("dashboard.priceHistory")],
-    }
-  }
+    };
+  };
 
   // Chart configuration
   const chartConfig = {
     backgroundGradientFrom: COLORS.white,
     backgroundGradientTo: COLORS.white,
     decimalPlaces: 0,
-    color: (opacity = 1) => `rgba(0, 100, 0, ${opacity})`,
+    color: (opacity = 1) => `rgba(76, 175, 80, ${opacity})`, // Green color
     labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
     style: {
       borderRadius: 16,
     },
     propsForDots: {
-      r: "6",
+      r: "5",
       strokeWidth: "2",
       stroke: COLORS.primary,
     },
-  }
+    strokeWidth: 2,
+    barPercentage: 0.5,
+    useShadowColorFromDataset: false,
+    propsForBackgroundLines: {
+      strokeWidth: 1,
+      stroke: "#e3e3e3",
+      strokeDasharray: "5, 5",
+    },
+    propsForLabels: {
+      fontSize: 10,
+      fontWeight: "bold",
+    },
+  };
 
   return (
     <SafeAreaView style={styles.container}>
-      <Header title={t("dashboard.title")} showNotificationsButton={true} onNotificationsPress={() => navigation.navigate("Notifications")} />
+      <Header
+        title={t("dashboard.title")}
+        showNotificationsButton={true}
+        onNotificationsPress={() => navigation.navigate("Notifications")}
+      />
 
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
       >
         <View style={styles.filtersContainer}>
           <Dropdown
@@ -249,46 +437,85 @@ const DashboardScreen = ({ navigation }) => {
           <View style={styles.datePickersContainer}>
             <View style={styles.datePicker}>
               <Text style={styles.datePickerLabel}>{t("historical.from")}</Text>
-              <TouchableOpacity style={styles.datePickerButton} onPress={() => setShowStartDatePicker(true)}>
-                <Text style={styles.datePickerButtonText}>{formatDate(startDate)}</Text>
-                <Ionicons name="calendar-outline" size={20} color={COLORS.primary} />
-              </TouchableOpacity>
-
-              {showStartDatePicker && (
-                <DateTimePicker
-                  value={startDate}
-                  mode="date"
-                  display="default"
-                  onChange={onStartDateChange}
-                  maximumDate={endDate}
+              {isWebPlatform ? (
+                <TextInput
+                  style={styles.datePickerInput}
+                  value={startDateInput}
+                  onChangeText={handleStartDateInputChange}
+                  placeholder="YYYY-MM-DD"
+                  keyboardType="numeric"
                 />
+              ) : (
+                <>
+                  <TouchableOpacity
+                    style={styles.datePickerButton}
+                    onPress={() => setShowStartDatePicker(true)}
+                  >
+                    <Text style={styles.datePickerButtonText}>
+                      {formatDate(startDate)}
+                    </Text>
+                    <Ionicons
+                      name="calendar-outline"
+                      size={20}
+                      color={COLORS.primary}
+                    />
+                  </TouchableOpacity>
+
+                  {showStartDatePicker && (
+                    <DateTimePicker
+                      value={startDate}
+                      mode="date"
+                      display="default"
+                      onChange={onStartDateChange}
+                      maximumDate={endDate}
+                    />
+                  )}
+                </>
               )}
             </View>
 
             <View style={styles.datePicker}>
               <Text style={styles.datePickerLabel}>{t("historical.to")}</Text>
-              <TouchableOpacity style={styles.datePickerButton} onPress={() => setShowEndDatePicker(true)}>
-                <Text style={styles.datePickerButtonText}>{formatDate(endDate)}</Text>
-                <Ionicons name="calendar-outline" size={20} color={COLORS.primary} />
-              </TouchableOpacity>
-
-              {showEndDatePicker && (
-                <DateTimePicker
-                  value={endDate}
-                  mode="date"
-                  display="default"
-                  onChange={onEndDateChange}
-                  minimumDate={startDate}
-                  maximumDate={new Date()}
+              {isWebPlatform ? (
+                <TextInput
+                  style={styles.datePickerInput}
+                  value={endDateInput}
+                  onChangeText={handleEndDateInputChange}
+                  placeholder="YYYY-MM-DD"
+                  keyboardType="numeric"
                 />
+              ) : (
+                <>
+                  <TouchableOpacity
+                    style={styles.datePickerButton}
+                    onPress={() => setShowEndDatePicker(true)}
+                  >
+                    <Text style={styles.datePickerButtonText}>
+                      {formatDate(endDate)}
+                    </Text>
+                    <Ionicons
+                      name="calendar-outline"
+                      size={20}
+                      color={COLORS.primary}
+                    />
+                  </TouchableOpacity>
+
+                  {showEndDatePicker && (
+                    <DateTimePicker
+                      value={endDate}
+                      mode="date"
+                      display="default"
+                      onChange={onEndDateChange}
+                      minimumDate={startDate}
+                      maximumDate={new Date()}
+                    />
+                  )}
+                </>
               )}
             </View>
           </View>
 
-          <TouchableOpacity
-            style={styles.applyButton}
-            onPress={loadPriceData}
-          >
+          <TouchableOpacity style={styles.applyButton} onPress={loadPriceData}>
             <Text style={styles.applyButtonText}>{t("common.apply")}</Text>
           </TouchableOpacity>
         </Card>
@@ -303,12 +530,13 @@ const DashboardScreen = ({ navigation }) => {
             <Card style={styles.priceCard}>
               <Text style={styles.commodityName}>
                 {t("common.language") === "en"
-                  ? commodities.find(c => c.id === selectedCommodity)?.name
-                  : commodities.find(c => c.id === selectedCommodity)?.name_ur}
+                  ? commodities.find((c) => c.id === selectedCommodity)?.name
+                  : commodities.find((c) => c.id === selectedCommodity)
+                      ?.name_ur}
                 {" - "}
                 {t("common.language") === "en"
-                  ? locations.find(l => l.id === selectedLocation)?.name
-                  : locations.find(l => l.id === selectedLocation)?.name_ur}
+                  ? locations.find((l) => l.id === selectedLocation)?.name
+                  : locations.find((l) => l.id === selectedLocation)?.name_ur}
               </Text>
 
               <Text style={styles.dateRangeInfo}>
@@ -316,32 +544,50 @@ const DashboardScreen = ({ navigation }) => {
               </Text>
 
               <View style={styles.currentPriceContainer}>
-                <Text style={styles.currentPriceLabel}>{t("dashboard.currentPrice")}:</Text>
-                <Text style={styles.currentPriceValue}>PKR {priceData.current}</Text>
+                <Text style={styles.currentPriceLabel}>
+                  {t("dashboard.currentPrice")}:
+                </Text>
+                <Text style={styles.currentPriceValue}>
+                  PKR {priceData.current}
+                </Text>
               </View>
 
               <View style={styles.priceMetricsContainer}>
                 <View style={styles.priceMetric}>
-                  <Text style={styles.priceMetricLabel}>{t("dashboard.highestPrice")}</Text>
-                  <Text style={styles.priceMetricValue}>PKR {priceData.highest}</Text>
+                  <Text style={styles.priceMetricLabel}>
+                    {t("dashboard.highestPrice")}
+                  </Text>
+                  <Text style={styles.priceMetricValue}>
+                    PKR {priceData.highest}
+                  </Text>
                 </View>
 
                 <View style={styles.priceMetric}>
-                  <Text style={styles.priceMetricLabel}>{t("dashboard.lowestPrice")}</Text>
-                  <Text style={styles.priceMetricValue}>PKR {priceData.lowest}</Text>
+                  <Text style={styles.priceMetricLabel}>
+                    {t("dashboard.lowestPrice")}
+                  </Text>
+                  <Text style={styles.priceMetricValue}>
+                    PKR {priceData.lowest}
+                  </Text>
                 </View>
 
                 <View style={styles.priceMetric}>
-                  <Text style={styles.priceMetricLabel}>{t("dashboard.averagePrice")}</Text>
-                  <Text style={styles.priceMetricValue}>PKR {priceData.average}</Text>
+                  <Text style={styles.priceMetricLabel}>
+                    {t("dashboard.averagePrice")}
+                  </Text>
+                  <Text style={styles.priceMetricValue}>
+                    PKR {priceData.average}
+                  </Text>
                 </View>
               </View>
             </Card>
 
             <Card style={styles.chartCard}>
-              <Text style={styles.chartTitle}>{t("dashboard.priceHistory")}</Text>
+              <Text style={styles.chartTitle}>
+                {t("dashboard.priceHistory")}
+              </Text>
 
-              {getChartData() && (
+              {getChartData() ? (
                 <LineChart
                   data={getChartData()}
                   width={screenWidth - 40}
@@ -349,7 +595,42 @@ const DashboardScreen = ({ navigation }) => {
                   chartConfig={chartConfig}
                   bezier
                   style={styles.chart}
+                  yAxisSuffix=" PKR"
+                  yAxisInterval={1}
+                  fromZero={true}
+                  withDots={true}
+                  withInnerLines={true}
+                  withOuterLines={true}
+                  withVerticalLines={true}
+                  withHorizontalLines={true}
+                  withVerticalLabels={true}
+                  withHorizontalLabels={true}
                 />
+              ) : (
+                <View style={styles.noDataContainer}>
+                  <Text style={styles.noDataText}>
+                    {t("historical.noChartDataAvailable")}
+                  </Text>
+                  <Text style={styles.noDataSubText}>
+                    {t("common.language") === "en"
+                      ? `No price data available for ${
+                          commodities.find((c) => c.id === selectedCommodity)
+                            ?.name
+                        } in ${
+                          locations.find((l) => l.id === selectedLocation)?.name
+                        }`
+                      : `${
+                          commodities.find((c) => c.id === selectedCommodity)
+                            ?.name_ur
+                        } کے لیے ${
+                          locations.find((l) => l.id === selectedLocation)
+                            ?.name_ur
+                        } میں کوئی قیمت کا ڈیٹا دستیاب نہیں ہے`}
+                  </Text>
+                  <Text style={styles.noDataSubText}>
+                    {`${formatDate(startDate)} - ${formatDate(endDate)}`}
+                  </Text>
+                </View>
               )}
             </Card>
 
@@ -358,7 +639,14 @@ const DashboardScreen = ({ navigation }) => {
                 title={t("dashboard.setAlert")}
                 onPress={() => navigation.navigate("Alerts")}
                 type="primary"
-                icon={<Ionicons name="notifications-outline" size={18} color={COLORS.white} style={styles.buttonIcon} />}
+                icon={
+                  <Ionicons
+                    name="notifications-outline"
+                    size={18}
+                    color={COLORS.white}
+                    style={styles.buttonIcon}
+                  />
+                }
                 style={styles.navigationButton}
               />
 
@@ -366,7 +654,14 @@ const DashboardScreen = ({ navigation }) => {
                 title={t("dashboard.viewHistorical")}
                 onPress={() => navigation.navigate("Historical")}
                 type="primary"
-                icon={<Ionicons name="bar-chart-outline" size={18} color={COLORS.white} style={styles.buttonIcon} />}
+                icon={
+                  <Ionicons
+                    name="bar-chart-outline"
+                    size={18}
+                    color={COLORS.white}
+                    style={styles.buttonIcon}
+                  />
+                }
                 style={styles.navigationButton}
               />
 
@@ -374,21 +669,32 @@ const DashboardScreen = ({ navigation }) => {
                 title={t("dashboard.viewForecast")}
                 onPress={() => navigation.navigate("Forecast")}
                 type="primary"
-                icon={<Ionicons name="trending-up-outline" size={18} color={COLORS.white} style={styles.buttonIcon} />}
+                icon={
+                  <Ionicons
+                    name="trending-up-outline"
+                    size={18}
+                    color={COLORS.white}
+                    style={styles.buttonIcon}
+                  />
+                }
                 style={styles.navigationButton}
               />
             </View>
           </>
         ) : (
           <View style={styles.noDataContainer}>
-            <Text style={styles.noDataText}>{t("historical.noDataAvailable")}</Text>
-            <Text style={styles.noDataSubText}>{t("historical.tryDifferentDateRange")}</Text>
+            <Text style={styles.noDataText}>
+              {t("historical.noDataAvailable")}
+            </Text>
+            <Text style={styles.noDataSubText}>
+              {t("historical.tryDifferentDateRange")}
+            </Text>
           </View>
         )}
       </ScrollView>
     </SafeAreaView>
-  )
-}
+  );
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -447,6 +753,15 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background.tertiary,
   },
   datePickerButtonText: {
+    fontSize: FONT.sizes.medium,
+    color: COLORS.text.primary,
+  },
+  datePickerInput: {
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 8,
+    padding: SPACING.medium,
+    backgroundColor: COLORS.background.tertiary,
     fontSize: FONT.sizes.medium,
     color: COLORS.text.primary,
   },
@@ -562,7 +877,6 @@ const styles = StyleSheet.create({
     color: COLORS.text.secondary,
     textAlign: "center",
   },
-})
+});
 
-export default DashboardScreen
-
+export default DashboardScreen;
