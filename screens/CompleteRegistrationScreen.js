@@ -59,22 +59,23 @@ const CompleteRegistrationScreen = ({ route, navigation }) => {
 
     try {
       console.log("Completing registration for:", phoneNumber);
-      const response = await fetch(
-        "http://localhost:8000/auth/verify-and-create/",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            phone_number: phoneNumber,
-            code: code,
-            full_name: fullName,
-            email: email,
-            password: password,
-          }),
-        }
-      );
+      // Import API_BASE_URL from config.js
+      const { API_BASE_URL } = require("../config");
+      console.log("Using API URL:", `${API_BASE_URL}/auth/verify-and-create/`);
+
+      const response = await fetch(`${API_BASE_URL}/auth/verify-and-create/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          phone_number: phoneNumber,
+          code: code,
+          full_name: fullName,
+          email: email,
+          password: password,
+        }),
+      });
 
       console.log("Response status:", response.status);
       const data = await response.json();

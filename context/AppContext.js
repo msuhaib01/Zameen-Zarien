@@ -77,7 +77,11 @@ const sampleCommodities = [
   { id: 66, name: "Mango(Desahri)", name_ur: "آم (دیسہری)" },
   { id: 67, name: "Mango(Sindhri)", name_ur: "آم (سندھری)" },
   { id: 68, name: "Mash", name_ur: "ماش" },
-  { id: 69, name: "Mash Pulse(Imported) washed", name_ur: "ماش دال (درآمد شدہ) دھلی ہوئی" },
+  {
+    id: 69,
+    name: "Mash Pulse(Imported) washed",
+    name_ur: "ماش دال (درآمد شدہ) دھلی ہوئی",
+  },
   { id: 70, name: "Mash Pulse(local)", name_ur: "ماش دال (مقامی)" },
   { id: 71, name: "Masoor Pulse (Imported)", name_ur: "مسور دال (درآمد شدہ)" },
   { id: 72, name: "Masoor Pulse(local)", name_ur: "مسور دال (مقامی)" },
@@ -116,8 +120,16 @@ const sampleCommodities = [
   { id: 105, name: "Red Chilli Whole (Dry)", name_ur: "لال مرچ سابت (خشک)" },
   { id: 106, name: "Rice (IRRI)", name_ur: "چاول (آئی آر آر آئی)" },
   { id: 107, name: "Rice Basmati (385)", name_ur: "چاول باسمتی (385)" },
-  { id: 108, name: "Rice Basmati Super (New)", name_ur: "چاول باسمتی سپر (نیا)" },
-  { id: 109, name: "Rice Basmati Super (Old)", name_ur: "چاول باسمتی سپر (پرانا)" },
+  {
+    id: 108,
+    name: "Rice Basmati Super (New)",
+    name_ur: "چاول باسمتی سپر (نیا)",
+  },
+  {
+    id: 109,
+    name: "Rice Basmati Super (Old)",
+    name_ur: "چاول باسمتی سپر (پرانا)",
+  },
   { id: 110, name: "Rice Kainat (New)", name_ur: "چاول کائنات (نیا)" },
   { id: 111, name: "Seed Cotton(Phutti)", name_ur: "کپاس (پھٹی)" },
   { id: 112, name: "Sesame(تل)", name_ur: "تل" },
@@ -129,7 +141,11 @@ const sampleCommodities = [
   { id: 118, name: "Suger Beet(چقندر)", name_ur: "چقندر" },
   { id: 119, name: "Sunflower", name_ur: "سورج مکھی" },
   { id: 120, name: "Sweet Musk Melon", name_ur: "میٹھا خربوزہ" },
-  { id: 121, name: "Sweet Musk Melon (Shireen)", name_ur: "میٹھا خربوزہ (شیریں)" },
+  {
+    id: 121,
+    name: "Sweet Musk Melon (Shireen)",
+    name_ur: "میٹھا خربوزہ (شیریں)",
+  },
   { id: 122, name: "Sweet Potato(شکر قندی)", name_ur: "شکر قندی" },
   { id: 123, name: "Tinda Desi", name_ur: "ٹنڈا دیسی" },
   { id: 124, name: "Tindian", name_ur: "ٹنڈیاں" },
@@ -447,7 +463,9 @@ export const AppProvider = ({ children }) => {
   const [selectedCommodity, setSelectedCommodity] = useState(1); // Default to Wheat
   const [selectedLocation, setSelectedLocation] = useState(1); // Default to Lahore
   const [timePeriod, setTimePeriod] = useState("week"); // 'day', 'week', 'month', 'year' - used only for visualizations
-  const [startDate, setStartDate] = useState(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)); // Default to 7 days ago
+  const [startDate, setStartDate] = useState(
+    new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+  ); // Default to 7 days ago
   const [endDate, setEndDate] = useState(new Date()); // Default to today
   const [alerts, setAlerts] = useState(sampleAlerts);
   const [notifications, setNotifications] = useState(sampleNotifications);
@@ -527,19 +545,20 @@ export const AppProvider = ({ children }) => {
     setIsLoading(true);
     try {
       console.log("Making API request to login endpoint...");
-      const response = await fetch(
-        "http://localhost:8000/auth/password-login/",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            phone_number: phoneNumber,
-            password: password,
-          }),
-        }
-      );
+      // Import API_BASE_URL from config.js
+      const { API_BASE_URL } = require("../config");
+      console.log("Using API URL:", `${API_BASE_URL}/auth/password-login/`);
+
+      const response = await fetch(`${API_BASE_URL}/auth/password-login/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          phone_number: phoneNumber,
+          password: password,
+        }),
+      });
 
       console.log("Response status:", response.status);
       const data = await response.json();

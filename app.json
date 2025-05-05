@@ -11,9 +11,7 @@
       "resizeMode": "contain",
       "backgroundColor": "#006400"
     },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
+    "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true
     },
@@ -24,15 +22,30 @@
       },
       "newArchEnabled": true
     },
-    
+
     "web": {
       "favicon": "./assets/favicon.png",
       "bundler": "metro"
     },
-    "plugins": [
-      "expo-asset",
-      "expo-localization",
-      "expo-splash-screen"
-    ]
+    "plugins": ["expo-asset", "expo-localization", "expo-splash-screen"],
+    "extra": {
+      "eas": {
+        "projectId": "your-project-id"
+      }
+    },
+    "owner": "your-expo-username",
+    "runtimeVersion": {
+      "policy": "sdkVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/your-project-id"
+    },
+    "experiments": {
+      "tsconfigPaths": true
+    },
+    "packagerOpts": {
+      "hostType": "lan",
+      "lanType": "ip"
+    }
   }
 }
