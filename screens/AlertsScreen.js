@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import {
   View,
   Text,
@@ -23,6 +23,7 @@ import Input from "../components/Input"
 import ToggleSwitch from "../components/ToggleSwitch"
 import { COLORS, FONT, SPACING } from "../theme"
 import { useApp } from "../context/AppContext"
+import { getPriceHistory } from "../services/cropPricesService"
 
 const AlertsScreen = ({ navigation }) => {
   const { t } = useTranslation()
@@ -34,6 +35,24 @@ const AlertsScreen = ({ navigation }) => {
   const [showHistoryModal, setShowHistoryModal] = useState(false)
   const [selectedAlert, setSelectedAlert] = useState(null)
   const [alertHistory, setAlertHistory] = useState([])
+  const [currentPrices, setCurrentPrices] = useState({})
+
+  // Load current prices when component mounts
+  useEffect(() => {
+    const loadCurrentPrices = async () => {
+      try {
+        const prices = {}
+        for (const alert of alerts) {
+          prices[alert.commodityId] = await getCurrentPrice(alert.commodityId)
+        }
+        setCurrentPrices(prices)
+      } catch (error) {
+        console.error("Error loading current prices:", error)
+      }
+    }
+
+    loadCurrentPrices()
+  }, [alerts])
 
   // New alert form state
   const [formCommodity, setFormCommodity] = useState(1)
@@ -60,9 +79,22 @@ const AlertsScreen = ({ navigation }) => {
   // Handle refresh
   const onRefresh = async () => {
     setRefreshing(true)
-    // In a real app, you would fetch fresh data here
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-    setRefreshing(false)
+    try {
+      // In a real app, you would fetch fresh alerts data here
+      // For now, we'll just wait a bit to simulate a refresh
+      await new Promise((resolve) => setTimeout(resolve, 1000))
+
+      // Update current prices for all alerts
+      const newPrices = { ...currentPrices }
+      for (const alert of alerts) {
+        newPrices[alert.commodityId] = await getCurrentPrice(alert.commodityId)
+      }
+      setCurrentPrices(newPrices)
+    } catch (error) {
+      console.error("Error refreshing data:", error)
+    } finally {
+      setRefreshing(false)
+    }
   }
 
   // Open add alert modal
@@ -187,9 +219,34 @@ const AlertsScreen = ({ navigation }) => {
   }
 
   // Get current price for a commodity
-  const getCurrentPrice = (commodityId) => {
-    const data = getCommodityData(commodityId)
-    return data?.current || "-"
+  const getCurrentPrice = async (commodityId) => {
+    try {
+      const commodityName = commodities.find(c => c.id === commodityId)?.name
+      if (!commodityName) return "-"
+
+      // Use the first location for simplicity
+      const locationName = "Lahore"
+
+      // Get the latest price data
+      const today = new Date()
+      const thirtyDaysAgo = new Date()
+      thirtyDaysAgo.setDate(today.getDate() - 30)
+
+      const formattedStartDate = thirtyDaysAgo.toISOString().split('T')[0]
+      const formattedEndDate = today.toISOString().split('T')[0]
+
+      const data = await getPriceHistory(
+        commodityName,
+        locationName,
+        formattedStartDate,
+        formattedEndDate
+      )
+
+      return data?.stats?.current || "-"
+    } catch (error) {
+      console.error("Error getting current price:", error)
+      return "-"
+    }
   }
 
   return (
@@ -238,7 +295,7 @@ const AlertsScreen = ({ navigation }) => {
 
                   <View style={styles.alertInfo}>
                     <Text style={styles.alertInfoLabel}>{t("alerts.currentPrice")}:</Text>
-                    <Text style={styles.alertInfoValue}>PKR {getCurrentPrice(alert.commodityId)}</Text>
+                    <Text style={styles.alertInfoValue}>PKR {currentPrices[alert.commodityId] || "-"}</Text>
                   </View>
 
                   <View style={styles.alertInfo}>

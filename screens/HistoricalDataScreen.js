@@ -24,25 +24,36 @@ import Dropdown from "../components/Dropdown"
 import ChartWrapper from "../components/ChartWrapper"
 import { COLORS, FONT, SPACING, SHADOWS } from "../theme"
 import { useApp } from "../context/AppContext"
+import { getPriceHistory, compareCommodities, compareLocations } from "../services/cropPricesService"
 
 const screenWidth = Dimensions.get("window").width
 
 const HistoricalDataScreen = ({ navigation }) => {
   const { t } = useTranslation()
-  const { commodities, selectedCommodity, setSelectedCommodity, locations, selectedLocation, setSelectedLocation, getCommodityData } = useApp()
+  const {
+    commodities,
+    selectedCommodity,
+    setSelectedCommodity,
+    locations,
+    selectedLocation,
+    setSelectedLocation,
+    getCommodityData,
+    startDate,
+    setStartDate,
+    endDate,
+    setEndDate
+  } = useApp()
 
   const [refreshing, setRefreshing] = useState(false)
   const [priceData, setPriceData] = useState(null)
   const [chartType, setChartType] = useState("line") // 'line' or 'bar'
-  const [timeRange, setTimeRange] = useState("week") // 'week', 'month', 'year'
-  const [startDate, setStartDate] = useState(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)) // 7 days ago
-  const [endDate, setEndDate] = useState(new Date()) // Today
   const [showStartDatePicker, setShowStartDatePicker] = useState(false)
   const [showEndDatePicker, setShowEndDatePicker] = useState(false)
   const [compareCommodities, setCompareCommodities] = useState(false)
   const [selectedCommodities, setSelectedCommodities] = useState([selectedCommodity])
   const [isWebPlatform, setIsWebPlatform] = useState(Platform.OS === 'web')
   const [activeTab, setActiveTab] = useState('commodity') // 'commodity' or 'location'
+  const [isDataLoading, setIsDataLoading] = useState(false)
 
   // Chart type options
   const chartTypeOptions = [
@@ -50,11 +61,38 @@ const HistoricalDataScreen = ({ navigation }) => {
     { label: t("historical.barChart"), value: "bar" },
   ]
 
-  // Time range options
-  const timeRangeOptions = [
-    { label: t("historical.weekly"), value: "week" },
-    { label: t("historical.monthly"), value: "month" },
-    { label: t("historical.yearly"), value: "year" },
+  // Predefined date range options for quick selection
+  const dateRangeOptions = [
+    {
+      label: t("historical.lastWeek"),
+      value: "week",
+      getRange: () => {
+        const end = new Date()
+        const start = new Date()
+        start.setDate(end.getDate() - 7)
+        return { start, end }
+      }
+    },
+    {
+      label: t("historical.lastMonth"),
+      value: "month",
+      getRange: () => {
+        const end = new Date()
+        const start = new Date()
+        start.setMonth(end.getMonth() - 1)
+        return { start, end }
+      }
+    },
+    {
+      label: t("historical.lastYear"),
+      value: "year",
+      getRange: () => {
+        const end = new Date()
+        const start = new Date()
+        start.setFullYear(end.getFullYear() - 1)
+        return { start, end }
+      }
+    },
   ]
 
   // Commodity options
@@ -74,14 +112,14 @@ const HistoricalDataScreen = ({ navigation }) => {
     setIsWebPlatform(Platform.OS === 'web')
   }, [])
 
-  // Load price data when selected commodity or location changes
+  // Load price data when selected commodity, location, or date range changes
   useEffect(() => {
     try {
       loadPriceData()
     } catch (error) {
       console.error("Error loading price data:", error)
     }
-  }, [selectedCommodity, selectedLocation, timeRange, startDate, endDate])
+  }, [selectedCommodity, selectedLocation, startDate, endDate])
 
   // Update selected commodities when toggling compare mode
   useEffect(() => {
@@ -99,23 +137,143 @@ const HistoricalDataScreen = ({ navigation }) => {
   }, [compareCommodities, selectedCommodity])
 
   // Load price data
-  const loadPriceData = () => {
+  const loadPriceData = async () => {
     try {
-      const data = getCommodityData(selectedCommodity)
-      setPriceData(data)
+      setIsDataLoading(true)
+
+      // Format dates for API
+      const formattedStartDate = startDate.toISOString().split('T')[0]
+      const formattedEndDate = endDate.toISOString().split('T')[0]
+
+      if (activeTab === 'commodity') {
+        if (compareCommodities && selectedCommodities.length > 1) {
+          // Get commodity names from IDs
+          const commodityNames = selectedCommodities.map(id =>
+            commodities.find(c => c.id === id)?.name
+          ).filter(Boolean)
+
+          // Get location name from ID
+          const locationName = locations.find(l => l.id === selectedLocation)?.name
+
+          // Compare multiple commodities
+          const data = await compareCommodities(
+            commodityNames,
+            locationName,
+            formattedStartDate,
+            formattedEndDate
+          )
+
+          // Transform data for chart
+          const transformedData = {
+            history: Object.entries(data.data).flatMap(([commodity, prices]) =>
+              prices.map(item => ({
+                ...item,
+                commodity
+              }))
+            ),
+            average: 0,
+            highest: 0,
+            lowest: 0
+          }
+
+          // Calculate statistics
+          if (transformedData.history.length > 0) {
+            const prices = transformedData.history.map(item => item.price).filter(Boolean)
+            transformedData.average = prices.reduce((sum, price) => sum + price, 0) / prices.length
+            transformedData.highest = Math.max(...prices)
+            transformedData.lowest = Math.min(...prices)
+          }
+
+          setPriceData(transformedData)
+        } else {
+          // Get single commodity data
+          const commodityName = commodities.find(c => c.id === selectedCommodity)?.name
+          const locationName = locations.find(l => l.id === selectedLocation)?.name
+
+          console.log(`Fetching price history for ${commodityName} in ${locationName} from ${formattedStartDate} to ${formattedEndDate}`)
+
+          const data = await getPriceHistory(
+            commodityName,
+            locationName,
+            formattedStartDate,
+            formattedEndDate
+          )
+
+          // Transform data for chart
+          const transformedData = {
+            history: data.data,
+            average: data.stats.average,
+            highest: data.stats.highest,
+            lowest: data.stats.lowest
+          }
+
+          setPriceData(transformedData)
+        }
+      } else {
+        // Compare locations
+        const commodityName = commodities.find(c => c.id === selectedCommodity)?.name
+
+        // Get location names from the locations array
+        const locationNames = [locations.find(l => l.id === selectedLocation)?.name].filter(Boolean)
+
+        const data = await compareLocations(
+          commodityName,
+          locationNames,
+          formattedStartDate,
+          formattedEndDate
+        )
+
+        // Transform data for chart
+        const transformedData = {
+          history: Object.entries(data.data).flatMap(([location, prices]) =>
+            prices.map(item => ({
+              ...item,
+              location
+            }))
+          ),
+          average: 0,
+          highest: 0,
+          lowest: 0
+        }
+
+        // Calculate statistics
+        if (transformedData.history.length > 0) {
+          const prices = transformedData.history.map(item => item.price).filter(Boolean)
+          transformedData.average = prices.reduce((sum, price) => sum + price, 0) / prices.length
+          transformedData.highest = Math.max(...prices)
+          transformedData.lowest = Math.min(...prices)
+        }
+
+        setPriceData(transformedData)
+      }
     } catch (error) {
       console.error("Error in loadPriceData:", error)
       setPriceData(null)
+    } finally {
+      setIsDataLoading(false)
+    }
+  }
+
+  // Apply a predefined date range
+  const applyDateRange = (rangeValue) => {
+    const option = dateRangeOptions.find(opt => opt.value === rangeValue)
+    if (option) {
+      const { start, end } = option.getRange()
+      setStartDate(start)
+      setEndDate(end)
     }
   }
 
   // Handle refresh
   const onRefresh = async () => {
     setRefreshing(true)
-    // In a real app, you would fetch fresh data here
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-    loadPriceData()
-    setRefreshing(false)
+    try {
+      await loadPriceData()
+    } catch (error) {
+      console.error("Error refreshing data:", error)
+    } finally {
+      setRefreshing(false)
+    }
   }
 
   // Toggle commodity selection for comparison
@@ -130,19 +288,25 @@ const HistoricalDataScreen = ({ navigation }) => {
     }
   }
 
-  // Get filtered historical data based on date range
+  // Get filtered historical data based on date range and commodity
   const getFilteredHistoricalData = (commodityId) => {
     try {
-      const data = getCommodityData(commodityId)
-      if (!data || !data.history) return []
+      if (!priceData || !priceData.history) return []
 
-      const startTimestamp = startDate.getTime()
-      const endTimestamp = endDate.getTime()
-
-      return data.history.filter((item) => {
-        const itemDate = new Date(item.date).getTime()
-        return itemDate >= startTimestamp && itemDate <= endTimestamp
-      })
+      // If we're comparing commodities, filter by commodity ID
+      if (compareCommodities && priceData.history.some(item => item.commodity)) {
+        const commodityName = commodities.find(c => c.id === commodityId)?.name
+        return priceData.history.filter(item => item.commodity === commodityName)
+      }
+      // If we're comparing locations, filter by location
+      else if (activeTab === 'location' && priceData.history.some(item => item.location)) {
+        const locationName = locations.find(l => l.id === selectedLocation)?.name
+        return priceData.history.filter(item => item.location === locationName)
+      }
+      // Otherwise, return all data (for single commodity/location)
+      else {
+        return priceData.history
+      }
     } catch (error) {
       console.error("Error in getFilteredHistoricalData:", error)
       return []
@@ -158,7 +322,7 @@ const HistoricalDataScreen = ({ navigation }) => {
       const datasets = selectedCommodities.map((commodityId, index) => {
         const filteredData = getFilteredHistoricalData(commodityId)
         if (!filteredData || filteredData.length === 0) return null
-        
+
         const commodity = commodities.find((c) => c.id === commodityId)
         if (!commodity) return null
 
@@ -203,7 +367,7 @@ const HistoricalDataScreen = ({ navigation }) => {
           label: t("common.language") === "en" ? commodity.name : commodity.name_ur,
         }
       }).filter(Boolean) // Remove null datasets
-      
+
       if (datasets.length === 0) return null
 
       // Ensure all price values are valid numbers
@@ -214,7 +378,7 @@ const HistoricalDataScreen = ({ navigation }) => {
       // Get labels (dates) from the first dataset
       const firstDataset = getFilteredHistoricalData(selectedCommodities[0])
       if (!firstDataset || firstDataset.length === 0) return null
-      
+
       const labels = firstDataset.map((item) => {
         try {
           const date = new Date(item.date)
@@ -297,8 +461,8 @@ const HistoricalDataScreen = ({ navigation }) => {
   const renderChart = () => {
     try {
       const chartData = getChartData()
-      
-      if (!chartData || !chartData.datasets || chartData.datasets.length === 0 || 
+
+      if (!chartData || !chartData.datasets || chartData.datasets.length === 0 ||
           !chartData.labels || chartData.labels.length === 0) {
         return (
           <View style={styles.noDataContainer}>
@@ -316,10 +480,10 @@ const HistoricalDataScreen = ({ navigation }) => {
           </View>
         )
       }
-      
+
       // Make sure we're not running into width issues
       const chartWidth = Math.min(screenWidth - 40, 1000)
-      
+
       // Use the ChartWrapper component
       return (
         <ChartWrapper
@@ -391,14 +555,6 @@ const HistoricalDataScreen = ({ navigation }) => {
           )}
 
           <Dropdown
-            label={t("historical.timeRange")}
-            data={timeRangeOptions}
-            value={timeRange}
-            onSelect={setTimeRange}
-            style={styles.dropdown}
-          />
-
-          <Dropdown
             label={t("historical.chartType")}
             data={chartTypeOptions}
             value={chartType}
@@ -406,6 +562,21 @@ const HistoricalDataScreen = ({ navigation }) => {
             style={styles.dropdown}
           />
         </View>
+
+        <Card style={styles.quickRangesCard}>
+          <Text style={styles.quickRangesTitle}>{t("historical.quickDateRanges")}</Text>
+          <View style={styles.quickRangesContainer}>
+            {dateRangeOptions.map((option) => (
+              <TouchableOpacity
+                key={option.value}
+                style={styles.quickRangeButton}
+                onPress={() => applyDateRange(option.value)}
+              >
+                <Text style={styles.quickRangeButtonText}>{option.label}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </Card>
 
         <Card style={styles.dateRangeCard}>
           <Text style={styles.dateRangeTitle}>{t("historical.dateRange")}</Text>
@@ -486,20 +657,30 @@ const HistoricalDataScreen = ({ navigation }) => {
           )}
         </Card>
 
-        {priceData ? (
+        {isDataLoading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={COLORS.primary} />
+            <Text style={styles.loadingText}>{t("common.loading")}</Text>
+          </View>
+        ) : priceData ? (
           <Card style={styles.chartCard}>
-            <Text style={styles.chartTitle}>
-              {t("historical.priceHistory")} -{" "}
-              {selectedCommodities.length === 1
-                ? t("common.language") === "en"
-                  ? commodities.find((c) => c.id === selectedCommodities[0])?.name
-                  : commodities.find((c) => c.id === selectedCommodities[0])?.name_ur
-                : t("historical.multipleCommodities")}
-              {" - "}
-              {t("common.language") === "en"
-                ? locations.find((l) => l.id === selectedLocation)?.name
-                : locations.find((l) => l.id === selectedLocation)?.name_ur}
-            </Text>
+            <View style={styles.chartHeaderContainer}>
+              <Text style={styles.chartTitle}>
+                {t("historical.priceHistory")} -{" "}
+                {selectedCommodities.length === 1
+                  ? t("common.language") === "en"
+                    ? commodities.find((c) => c.id === selectedCommodities[0])?.name
+                    : commodities.find((c) => c.id === selectedCommodities[0])?.name_ur
+                  : t("historical.multipleCommodities")}
+                {" - "}
+                {t("common.language") === "en"
+                  ? locations.find((l) => l.id === selectedLocation)?.name
+                  : locations.find((l) => l.id === selectedLocation)?.name_ur}
+              </Text>
+              <Text style={styles.dateRangeInfo}>
+                {formatDate(startDate)} - {formatDate(endDate)}
+              </Text>
+            </View>
 
             {renderChart()}
 
@@ -508,7 +689,7 @@ const HistoricalDataScreen = ({ navigation }) => {
                 try {
                   const commodity = commodities.find((c) => c.id === commodityId)
                   if (!commodity) return null
-                  
+
                   // Generate a color based on index
                   const colors = [
                     COLORS.primary,
@@ -536,9 +717,9 @@ const HistoricalDataScreen = ({ navigation }) => {
             </View>
           </Card>
         ) : (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={COLORS.primary} />
-            <Text style={styles.loadingText}>{t("common.loading")}</Text>
+          <View style={styles.noDataContainer}>
+            <Text style={styles.noDataText}>{t("historical.noDataAvailable")}</Text>
+            <Text style={styles.noDataSubText}>{t("historical.tryDifferentDateRange")}</Text>
           </View>
         )}
 
@@ -628,6 +809,33 @@ const styles = StyleSheet.create({
   dropdown: {
     marginBottom: SPACING.medium,
   },
+  quickRangesCard: {
+    marginBottom: SPACING.medium,
+  },
+  quickRangesTitle: {
+    fontSize: FONT.sizes.large,
+    fontWeight: "bold",
+    marginBottom: SPACING.medium,
+    color: COLORS.text.primary,
+  },
+  quickRangesContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+  },
+  quickRangeButton: {
+    backgroundColor: COLORS.background.tertiary,
+    paddingVertical: SPACING.small,
+    paddingHorizontal: SPACING.medium,
+    borderRadius: 20,
+    marginRight: SPACING.small,
+    marginBottom: SPACING.small,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  quickRangeButtonText: {
+    fontSize: FONT.sizes.small,
+    color: COLORS.text.primary,
+  },
   dateRangeCard: {
     marginBottom: SPACING.large,
   },
@@ -710,11 +918,18 @@ const styles = StyleSheet.create({
   chartCard: {
     marginBottom: SPACING.large,
   },
+  chartHeaderContainer: {
+    marginBottom: SPACING.medium,
+  },
   chartTitle: {
     fontSize: FONT.sizes.large,
     fontWeight: "bold",
-    marginBottom: SPACING.medium,
+    marginBottom: SPACING.small,
     color: COLORS.text.primary,
+  },
+  dateRangeInfo: {
+    fontSize: FONT.sizes.small,
+    color: COLORS.text.secondary,
   },
   chart: {
     marginVertical: SPACING.medium,
@@ -812,6 +1027,11 @@ const styles = StyleSheet.create({
   },
   noDataText: {
     fontSize: FONT.sizes.medium,
+    color: COLORS.text.secondary,
+    marginBottom: SPACING.small,
+  },
+  noDataSubText: {
+    fontSize: FONT.sizes.small,
     color: COLORS.text.secondary,
   },
   errorContainer: {

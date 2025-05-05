@@ -446,7 +446,9 @@ export const AppProvider = ({ children }) => {
   const [language, setLanguage] = useState(i18n.language);
   const [selectedCommodity, setSelectedCommodity] = useState(1); // Default to Wheat
   const [selectedLocation, setSelectedLocation] = useState(1); // Default to Lahore
-  const [timePeriod, setTimePeriod] = useState("week"); // 'day', 'week', 'month', 'year'
+  const [timePeriod, setTimePeriod] = useState("week"); // 'day', 'week', 'month', 'year' - used only for visualizations
+  const [startDate, setStartDate] = useState(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)); // Default to 7 days ago
+  const [endDate, setEndDate] = useState(new Date()); // Default to today
   const [alerts, setAlerts] = useState(sampleAlerts);
   const [notifications, setNotifications] = useState(sampleNotifications);
   const [doNotDisturb, setDoNotDisturb] = useState(false);
@@ -664,6 +666,10 @@ export const AppProvider = ({ children }) => {
     setSelectedLocation,
     timePeriod,
     setTimePeriod,
+    startDate,
+    setStartDate,
+    endDate,
+    setEndDate,
     alerts,
     notifications,
     doNotDisturb,

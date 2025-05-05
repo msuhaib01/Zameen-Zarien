@@ -14,6 +14,7 @@ import Button from "../components/Button"
 import Dropdown from "../components/Dropdown"
 import { COLORS, FONT, SPACING } from "../theme"
 import { useApp } from "../context/AppContext"
+import { getForecast, getPriceHistory } from "../services/cropPricesService"
 
 const screenWidth = Dimensions.get("window").width
 
@@ -76,22 +77,77 @@ const ForecastScreen = ({ navigation }) => {
 
   // Load price data when selected commodity changes
   useEffect(() => {
-    loadPriceData()
-  }, [selectedCommodity, selectedLocation])
+    const fetchData = async () => {
+      try {
+        await loadPriceData()
+      } catch (error) {
+        console.error("Error loading data:", error)
+      }
+    }
+
+    fetchData()
+  }, [selectedCommodity, selectedLocation, forecastDays, compareWithHistorical])
 
   // Load price data
-  const loadPriceData = () => {
-    const data = getCommodityData(selectedCommodity)
-    setPriceData(data)
+  const loadPriceData = async () => {
+    try {
+      // Get commodity and location names
+      const commodityName = commodities.find(c => c.id === selectedCommodity)?.name
+      const locationName = locations.find(l => l.id === selectedLocation)?.name
+
+      if (!commodityName || !locationName) {
+        console.error("Invalid commodity or location")
+        return
+      }
+
+      // Get forecast data
+      const forecastData = await getForecast(commodityName, locationName, forecastDays)
+
+      // Get historical data for comparison if needed
+      let historicalData = null
+      if (compareWithHistorical) {
+        // Get data for the past 30 days
+        const today = new Date()
+        const thirtyDaysAgo = new Date()
+        thirtyDaysAgo.setDate(today.getDate() - 30)
+
+        const formattedStartDate = thirtyDaysAgo.toISOString().split('T')[0]
+        const formattedEndDate = today.toISOString().split('T')[0]
+
+        historicalData = await getPriceHistory(
+          commodityName,
+          locationName,
+          formattedStartDate,
+          formattedEndDate
+        )
+      }
+
+      // Transform data for the UI
+      const transformedData = {
+        forecast: forecastData.forecast,
+        history: historicalData ? historicalData.data : [],
+        average: historicalData ? historicalData.stats.average : 0,
+        highest: historicalData ? historicalData.stats.highest : 0,
+        lowest: historicalData ? historicalData.stats.lowest : 0,
+      }
+
+      setPriceData(transformedData)
+    } catch (error) {
+      console.error("Error loading forecast data:", error)
+      setPriceData(null)
+    }
   }
 
   // Handle refresh
   const onRefresh = async () => {
     setRefreshing(true)
-    // In a real app, you would fetch fresh data here
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-    loadPriceData()
-    setRefreshing(false)
+    try {
+      await loadPriceData()
+    } catch (error) {
+      console.error("Error refreshing data:", error)
+    } finally {
+      setRefreshing(false)
+    }
   }
 
   // Prepare chart data
@@ -167,7 +223,7 @@ const ForecastScreen = ({ navigation }) => {
             onSelect={setSelectedCommodity}
             style={styles.dropdown}
           />
-          
+
           <Dropdown
             label={t("historical.location")}
             data={locationOptions}

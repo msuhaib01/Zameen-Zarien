@@ -31,6 +31,7 @@ const enTranslations = {
     language: "en",
     and: "and",
     ok: "OK",
+    apply: "Apply",
   },
   dashboard: {
     title: "Dashboard",
@@ -185,6 +186,9 @@ const enTranslations = {
     lastYear: "Last Year",
     location: "Location",
     period: "Period",
+    quickDateRanges: "Quick Date Ranges",
+    tryDifferentDateRange: "Try selecting a different date range.",
+    customDateRange: "Custom Date Range",
   },
   notifications: {
     title: "Notifications",
@@ -289,6 +293,7 @@ const urTranslations = {
     language: "ur",
     and: "اور",
     ok: "ٹھیک ہے",
+    apply: "لاگو کریں",
   },
   dashboard: {
     title: "ڈیش بورڈ",
@@ -443,6 +448,9 @@ const urTranslations = {
     lastYear: "آخری سال",
     location: "موقع",
     period: "مدت",
+    quickDateRanges: "فوری تاریخ کی حدود",
+    tryDifferentDateRange: "مختلف تاریخ کی حد منتخب کرنے کی کوشش کریں۔",
+    customDateRange: "اپنی مرضی کے مطابق تاریخ کی حد",
   },
   notifications: {
     title: "نوٹیفیکیشنز",
