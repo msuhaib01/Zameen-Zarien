@@ -1,86 +1,126 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { View, Text, TouchableOpacity, StyleSheet, Modal, FlatList, SafeAreaView, Platform } from "react-native"
-import { Ionicons } from "@expo/vector-icons"
-import { COLORS, FONT, SPACING } from "../theme"
+import { useState } from "react";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Modal,
+  FlatList,
+  SafeAreaView,
+  Platform,
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { COLORS, FONT, SPACING } from "../theme";
 
-const Dropdown = ({ label, data, value, onSelect, placeholder = "Select an option", error, style }) => {
-  const [visible, setVisible] = useState(false)
-  const selectedItem = data.find((item) => item.value === value)
+const Dropdown = ({
+  label,
+  data,
+  value,
+  onSelect,
+  placeholder = "Select an option",
+  error,
+  style,
+}) => {
+  const [visible, setVisible] = useState(false);
+  const selectedItem = data.find((item) => item.value === value);
 
   const toggleDropdown = () => {
-    setVisible(!visible)
-  }
+    setVisible(!visible);
+  };
 
   const renderItem = ({ item }) => (
     <TouchableOpacity
       style={styles.item}
       onPress={() => {
-        onSelect(item.value)
-        setVisible(false)
+        onSelect(item.value);
+        setVisible(false);
       }}
     >
-      <Text style={[styles.itemText, item.value === value && styles.selectedItemText]}>{item.label}</Text>
-      {item.value === value && <Ionicons name="checkmark" size={20} color={COLORS.primary} />}
+      <Text
+        style={[
+          styles.itemText,
+          item.value === value && styles.selectedItemText,
+        ]}
+      >
+        {item.label}
+      </Text>
+      {item.value === value && (
+        <Ionicons name="checkmark" size={20} color={COLORS.primary} />
+      )}
     </TouchableOpacity>
-  )
+  );
 
   return (
     <View style={[styles.container, style]}>
       {label && <Text style={styles.label}>{label}</Text>}
-      <TouchableOpacity 
-        style={[styles.dropdown, error && styles.dropdownError]} 
+      <TouchableOpacity
+        style={[styles.dropdown, error && styles.dropdownError]}
         onPress={toggleDropdown}
         activeOpacity={0.7}
       >
-        <Text 
+        <Text
           style={selectedItem ? styles.selectedText : styles.placeholderText}
           numberOfLines={1}
           ellipsizeMode="tail"
         >
           {selectedItem ? selectedItem.label : placeholder}
         </Text>
-        <Ionicons name={visible ? "chevron-up" : "chevron-down"} size={20} color={COLORS.gray} />
+        <Ionicons
+          name={visible ? "chevron-up" : "chevron-down"}
+          size={20}
+          color={COLORS.gray}
+        />
       </TouchableOpacity>
       {error && <Text style={styles.errorText}>{error}</Text>}
 
       <Modal visible={visible} transparent animationType="slide">
-        <TouchableOpacity 
-          style={styles.overlay} 
-          onPress={() => setVisible(false)} 
+        <TouchableOpacity
+          style={styles.overlay}
+          onPress={() => setVisible(false)}
           activeOpacity={1}
         >
           <SafeAreaView style={styles.modalContainer}>
             <View style={styles.modalContent}>
               <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle} numberOfLines={1} ellipsizeMode="tail">
+                <Text
+                  style={styles.modalTitle}
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                >
                   {label || "Select an option"}
                 </Text>
-                <TouchableOpacity 
+                <TouchableOpacity
                   onPress={() => setVisible(false)}
                   hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 >
-                  <Ionicons name="close" size={24} color={COLORS.text.primary} />
+                  <Ionicons
+                    name="close"
+                    size={24}
+                    color={COLORS.text.primary}
+                  />
                 </TouchableOpacity>
               </View>
-              <FlatList
-                data={data}
-                renderItem={renderItem}
-                keyExtractor={(item) => item.value.toString()}
-                showsVerticalScrollIndicator={false}
-                contentContainerStyle={styles.listContainer}
-                initialNumToRender={10}
-                maxToRenderPerBatch={10}
-                windowSize={10}
-              />
+              <View style={{ flex: 1 }}>
+                <FlatList
+                  data={data}
+                  renderItem={renderItem}
+                  keyExtractor={(item) => item.value.toString()}
+                  showsVerticalScrollIndicator={true}
+                  contentContainerStyle={styles.listContainer}
+                  initialNumToRender={10}
+                  maxToRenderPerBatch={10}
+                  windowSize={10}
+                />
+              </View>
             </View>
           </SafeAreaView>
         </TouchableOpacity>
       </Modal>
     </View>
-  )
-}
+  );
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -128,11 +168,13 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background.secondary,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    maxHeight: Platform.OS === 'android' ? "70%" : "80%",
-    ...(Platform.OS === 'android' ? { elevation: 5 } : {}),
+    maxHeight: Platform.OS === "android" ? "70%" : "80%",
+    minHeight: Platform.OS === "android" ? "40%" : "40%",
+    ...(Platform.OS === "android" ? { elevation: 5 } : {}),
   },
   modalContent: {
     padding: SPACING.large,
+    flex: 1,
   },
   modalHeader: {
     flexDirection: "row",
@@ -150,6 +192,7 @@ const styles = StyleSheet.create({
   },
   listContainer: {
     paddingBottom: SPACING.large,
+    flexGrow: 1,
   },
   item: {
     flexDirection: "row",
@@ -169,7 +212,6 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
     fontWeight: "bold",
   },
-})
+});
 
-export default Dropdown
-
+export default Dropdown;
