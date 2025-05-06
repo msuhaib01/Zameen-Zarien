@@ -1,0 +1,31 @@
+"use client"
+
+import { View, StyleSheet } from "react-native"
+import { LogBox } from "react-native"
+import { GestureHandlerRootView } from "react-native-gesture-handler"
+
+// Import our test component
+import ApiTest from "./ApiTest"
+
+// Ignore specific warnings
+LogBox.ignoreLogs([
+  "Reanimated 2",
+  "AsyncStorage has been extracted",
+  "Non-serializable values were found in the navigation state",
+])
+
+export default function App() {
+  return (
+    <View style={styles.container}>
+      <GestureHandlerRootView style={styles.container}>
+        <ApiTest />
+      </GestureHandlerRootView>
+    </View>
+  )
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  }
+});

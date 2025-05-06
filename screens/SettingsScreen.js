@@ -40,7 +40,6 @@ const SettingsScreen = ({ navigation }) => {
   } = useApp();
 
   const [defaultView, setDefaultView] = useState("dashboard");
-  const [dataUpdateFrequency, setDataUpdateFrequency] = useState("hourly");
   const [notificationSound, setNotificationSound] = useState(true);
   const [vibration, setVibration] = useState(true);
 
@@ -56,13 +55,6 @@ const SettingsScreen = ({ navigation }) => {
     { label: t("forecast.title"), value: "forecast" },
     { label: t("historical.title"), value: "historical" },
     { label: t("alerts.title"), value: "alerts" },
-  ];
-
-  // Data update frequency options
-  const dataUpdateFrequencyOptions = [
-    { label: t("settings.realTime"), value: "realtime" },
-    { label: t("settings.hourly"), value: "hourly" },
-    { label: t("settings.daily"), value: "daily" },
   ];
 
   // Commodity options
@@ -108,7 +100,6 @@ const SettingsScreen = ({ navigation }) => {
               "alerts",
               "notifications",
               "defaultView",
-              "dataUpdateFrequency",
               "notificationSound",
               "vibration",
             ]).then(() => {
@@ -139,7 +130,6 @@ const SettingsScreen = ({ navigation }) => {
           onPress: () => {
             // Reset settings to defaults
             setDefaultView("dashboard");
-            setDataUpdateFrequency("hourly");
             setNotificationSound(true);
             setVibration(true);
             setSelectedCommodity(1);
@@ -227,18 +217,6 @@ const SettingsScreen = ({ navigation }) => {
               data={defaultViewOptions}
               value={defaultView}
               onSelect={setDefaultView}
-              style={styles.settingDropdown}
-            />
-          </View>
-
-          <View style={styles.settingItem}>
-            <Text style={styles.settingLabel}>
-              {t("settings.dataUpdateFrequency")}
-            </Text>
-            <Dropdown
-              data={dataUpdateFrequencyOptions}
-              value={dataUpdateFrequency}
-              onSelect={setDataUpdateFrequency}
               style={styles.settingDropdown}
             />
           </View>

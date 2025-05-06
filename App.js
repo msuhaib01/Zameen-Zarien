@@ -84,9 +84,9 @@ export default function App() {
       <I18nextProvider i18n={i18n}>
         <GestureHandlerRootView style={styles.container}>
           <AppProvider>
-            <StatusBar 
-              backgroundColor={showSplashAnimation ? "#006400" : "transparent"} 
-              barStyle={showSplashAnimation ? "light-content" : "auto"} 
+            <StatusBar
+              backgroundColor={showSplashAnimation ? "#006400" : "transparent"}
+              barStyle={showSplashAnimation ? "light-content" : "auto"}
               translucent={!showSplashAnimation}
             />
             <AppNavigator />

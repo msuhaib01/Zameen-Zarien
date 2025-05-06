@@ -155,9 +155,9 @@ export const getPriceHistory = async (
 };
 
 // Get price forecast for a specific commodity and location
-export const getForecast = async (commodity, location, days = 7) => {
+export const getForecast = async (commodity, location, days = 7, useModel = true) => {
   try {
-    const params = { commodity, location, days };
+    const params = { commodity, location, days, use_model: useModel };
     const response = await axios.get(
       `${API_BASE_URL}/api/crop-prices/forecast/`,
       { params }
@@ -165,6 +165,21 @@ export const getForecast = async (commodity, location, days = 7) => {
     return response.data;
   } catch (error) {
     console.error("Error fetching forecast:", error);
+    throw error;
+  }
+};
+
+// Get price prediction using the trained model
+export const getModelPrediction = async (commodity, location, days = 7) => {
+  try {
+    const params = { commodity, location, days };
+    const response = await axios.get(
+      `${API_BASE_URL}/api/crop-prices/model-predict/`,
+      { params }
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error getting model prediction:", error);
     throw error;
   }
 };

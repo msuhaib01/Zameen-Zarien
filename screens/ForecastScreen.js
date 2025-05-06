@@ -1,12 +1,13 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, SafeAreaView } from "react-native"
+import { Platform } from "react-native"
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, SafeAreaView, TextInput, ActivityIndicator } from "react-native"
 import { useTranslation } from "react-i18next"
 import { Ionicons } from "@expo/vector-icons"
 import { LineChart } from "react-native-chart-kit"
 import { Dimensions } from "react-native"
-import Slider from "@react-native-community/slider"
+import DateTimePicker from "@react-native-community/datetimepicker"
 
 import Header from "../components/Header"
 import Card from "../components/Card"
@@ -14,9 +15,55 @@ import Button from "../components/Button"
 import Dropdown from "../components/Dropdown"
 import { COLORS, FONT, SPACING } from "../theme"
 import { useApp } from "../context/AppContext"
-import { getForecast, getPriceHistory } from "../services/cropPricesService"
+import { getForecast, getPriceHistory, getModelPrediction } from "../services/cropPricesService"
 
 const screenWidth = Dimensions.get("window").width
+
+// Format date for input field (YYYY-MM-DD)
+const formatDateForInput = (date) => {
+  if (!date) return "";
+  const d = new Date(date);
+  const month = `${d.getMonth() + 1}`.padStart(2, "0");
+  const day = `${d.getDate()}`.padStart(2, "0");
+  return `${d.getFullYear()}-${month}-${day}`;
+};
+
+// Parse date from input field
+const parseDateFromInput = (dateString) => {
+  if (!dateString) return new Date();
+  try {
+    const [year, month, day] = dateString
+      .split("-")
+      .map((num) => parseInt(num, 10));
+    return new Date(year, month - 1, day);
+  } catch (error) {
+    console.error("Error parsing date:", error);
+    return new Date();
+  }
+};
+
+// Date validation function
+const validateDate = (dateString) => {
+  // Check if the date string matches YYYY-MM-DD format
+  const regex = /^\d{4}-\d{2}-\d{2}$/;
+  if (!regex.test(dateString)) return false;
+
+  // Check if the date is valid
+  const date = new Date(dateString);
+  const timestamp = date.getTime();
+  if (isNaN(timestamp)) return false;
+
+  // Check if the date components match the input
+  const parts = dateString.split('-');
+  const year = parseInt(parts[0], 10);
+  const month = parseInt(parts[1], 10) - 1; // JS months are 0-indexed
+  const day = parseInt(parts[2], 10);
+
+  const reconstructedDate = new Date(year, month, day);
+  return reconstructedDate.getFullYear() === year &&
+         reconstructedDate.getMonth() === month &&
+         reconstructedDate.getDate() === day;
+};
 
 const SHADOWS = {
   small: {
@@ -60,8 +107,22 @@ const ForecastScreen = ({ navigation }) => {
 
   const [refreshing, setRefreshing] = useState(false)
   const [priceData, setPriceData] = useState(null)
-  const [forecastDays, setForecastDays] = useState(7)
+  const [isDataLoading, setIsDataLoading] = useState(false)
   const [compareWithHistorical, setCompareWithHistorical] = useState(false)
+  const [useModel, setUseModel] = useState(true)
+
+  // Date range state
+  const today = new Date()
+  const sevenDaysLater = new Date(today)
+  sevenDaysLater.setDate(today.getDate() + 7)
+
+  const [startDate, setStartDate] = useState(today)
+  const [endDate, setEndDate] = useState(sevenDaysLater)
+  const [startDateInput, setStartDateInput] = useState(formatDateForInput(today))
+  const [endDateInput, setEndDateInput] = useState(formatDateForInput(sevenDaysLater))
+  const [showStartDatePicker, setShowStartDatePicker] = useState(false)
+  const [showEndDatePicker, setShowEndDatePicker] = useState(false)
+  const [isWebPlatform] = useState(Platform.OS === "web")
 
   // Commodity options
   const commodityOptions = commodities.map((commodity) => ({
@@ -86,11 +147,113 @@ const ForecastScreen = ({ navigation }) => {
     }
 
     fetchData()
-  }, [selectedCommodity, selectedLocation, forecastDays, compareWithHistorical])
+  }, [selectedCommodity, selectedLocation, compareWithHistorical, useModel])
+
+  // Handle date change
+  const onStartDateChange = (event, selectedDate) => {
+    const currentDate = selectedDate || startDate
+    setShowStartDatePicker(Platform.OS === "ios")
+    setStartDate(currentDate)
+    setStartDateInput(formatDateForInput(currentDate))
+  }
+
+  const onEndDateChange = (event, selectedDate) => {
+    const currentDate = selectedDate || endDate
+    setShowEndDatePicker(Platform.OS === "ios")
+    setEndDate(currentDate)
+    setEndDateInput(formatDateForInput(currentDate))
+  }
+
+  // Handle web date input change with real-time validation and formatting
+  const handleStartDateInputChange = (text) => {
+    // Only allow digits and hyphens
+    const sanitizedText = text.replace(/[^0-9-]/g, '')
+
+    // Auto-format as user types (YYYY-MM-DD)
+    let formattedText = sanitizedText
+
+    // If we have 4 digits and no hyphen yet, add one
+    if (sanitizedText.length === 4 && !sanitizedText.includes('-')) {
+      formattedText = sanitizedText + '-'
+    }
+    // If we have 7 characters and only one hyphen, add another
+    else if (sanitizedText.length === 7 && sanitizedText.split('-').length === 2) {
+      formattedText = sanitizedText + '-'
+    }
+    // Limit to 10 characters (YYYY-MM-DD)
+    else if (sanitizedText.length > 10) {
+      formattedText = sanitizedText.substring(0, 10)
+    }
+
+    setStartDateInput(formattedText)
+
+    // If we have a complete date, validate it
+    if (formattedText.length === 10 && validateDate(formattedText)) {
+      const date = parseDateFromInput(formattedText)
+      // Only update if it's a valid date and not after the end date
+      if (!isNaN(date.getTime()) && date <= endDate) {
+        setStartDate(date)
+      }
+    }
+  }
+
+  const handleEndDateInputChange = (text) => {
+    // Only allow digits and hyphens
+    const sanitizedText = text.replace(/[^0-9-]/g, '')
+
+    // Auto-format as user types (YYYY-MM-DD)
+    let formattedText = sanitizedText
+
+    // If we have 4 digits and no hyphen yet, add one
+    if (sanitizedText.length === 4 && !sanitizedText.includes('-')) {
+      formattedText = sanitizedText + '-'
+    }
+    // If we have 7 characters and only one hyphen, add another
+    else if (sanitizedText.length === 7 && sanitizedText.split('-').length === 2) {
+      formattedText = sanitizedText + '-'
+    }
+    // Limit to 10 characters (YYYY-MM-DD)
+    else if (sanitizedText.length > 10) {
+      formattedText = sanitizedText.substring(0, 10)
+    }
+
+    setEndDateInput(formattedText)
+
+    // If we have a complete date, validate it
+    if (formattedText.length === 10 && validateDate(formattedText)) {
+      const date = parseDateFromInput(formattedText)
+      // Only update if it's a valid date, after the start date
+      if (!isNaN(date.getTime()) && date >= startDate) {
+        setEndDate(date)
+      }
+    }
+  }
+
+  // Format date for display
+  const formatDate = (date) => {
+    return `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`
+  }
+
+  // Apply the date range and fetch data
+  const applyDateRange = () => {
+    // We'll use the current startDate and endDate values
+    // which have already been validated during input
+
+    // Calculate forecast days based on date range
+    const daysDiff = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24))
+
+    // Fetch data with the current date range
+    loadPriceData(daysDiff)
+  }
 
   // Load price data
-  const loadPriceData = async () => {
+  const loadPriceData = async (days) => {
     try {
+      setIsDataLoading(true)
+
+      // Calculate forecast days based on date range if not provided
+      const forecastDays = days || Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24))
+
       // Get commodity and location names
       const commodityName = commodities.find(c => c.id === selectedCommodity)?.name
       const locationName = locations.find(l => l.id === selectedLocation)?.name
@@ -100,19 +263,22 @@ const ForecastScreen = ({ navigation }) => {
         return
       }
 
-      // Get forecast data
-      const forecastData = await getForecast(commodityName, locationName, forecastDays)
+      // Get forecast data - either using the model or simple linear prediction
+      let forecastData;
+      if (useModel) {
+        // Use the trained model for prediction
+        forecastData = await getModelPrediction(commodityName, locationName, forecastDays)
+      } else {
+        // Use simple linear prediction
+        forecastData = await getForecast(commodityName, locationName, forecastDays, false)
+      }
 
       // Get historical data for comparison if needed
       let historicalData = null
       if (compareWithHistorical) {
-        // Get data for the past 30 days
-        const today = new Date()
-        const thirtyDaysAgo = new Date()
-        thirtyDaysAgo.setDate(today.getDate() - 30)
-
-        const formattedStartDate = thirtyDaysAgo.toISOString().split('T')[0]
-        const formattedEndDate = today.toISOString().split('T')[0]
+        // Get data using the selected date range
+        const formattedStartDate = startDate.toISOString().split('T')[0]
+        const formattedEndDate = endDate.toISOString().split('T')[0]
 
         historicalData = await getPriceHistory(
           commodityName,
@@ -129,12 +295,16 @@ const ForecastScreen = ({ navigation }) => {
         average: historicalData ? historicalData.stats.average : 0,
         highest: historicalData ? historicalData.stats.highest : 0,
         lowest: historicalData ? historicalData.stats.lowest : 0,
+        usingModel: forecastData.using_model !== undefined ? forecastData.using_model : useModel,
+        message: forecastData.message || ''
       }
 
       setPriceData(transformedData)
     } catch (error) {
       console.error("Error loading forecast data:", error)
       setPriceData(null)
+    } finally {
+      setIsDataLoading(false)
     }
   }
 
@@ -153,6 +323,9 @@ const ForecastScreen = ({ navigation }) => {
   // Prepare chart data
   const getChartData = () => {
     if (!priceData || !priceData.forecast) return null
+
+    // Calculate forecast days based on date range
+    const forecastDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24))
 
     // Get forecast data based on selected days
     const forecastData = priceData.forecast.slice(0, forecastDays)
@@ -246,20 +419,102 @@ const ForecastScreen = ({ navigation }) => {
                   : locations.find((l) => l.id === selectedLocation)?.name_ur}
               </Text>
 
-              <View style={styles.forecastDurationContainer}>
-                <Text style={styles.forecastDurationLabel}>
-                  {t("forecast.forecastDuration")}: {forecastDays} {t("forecast.days")}
+              <View style={styles.dateRangeContainer}>
+                <Text style={styles.dateRangeTitle}>
+                  {t("forecast.forecastDateRange") || "Forecast Date Range"}
                 </Text>
-                <Slider
-                  style={styles.slider}
-                  minimumValue={1}
-                  maximumValue={7}
-                  step={1}
-                  value={forecastDays}
-                  onValueChange={setForecastDays}
-                  minimumTrackTintColor={COLORS.primary}
-                  maximumTrackTintColor={COLORS.lightGray}
-                  thumbTintColor={COLORS.primary}
+
+                <View style={styles.datePickersContainer}>
+                  <View style={styles.datePicker}>
+                    <Text style={styles.datePickerLabel}>{t("historical.from")}</Text>
+                    {isWebPlatform ? (
+                      <TextInput
+                        style={styles.datePickerInput}
+                        value={startDateInput}
+                        onChangeText={handleStartDateInputChange}
+                        placeholder="YYYY-MM-DD"
+                        keyboardType="numeric"
+                        maxLength={10}
+                        autoComplete="off"
+                        autoCorrect={false}
+                      />
+                    ) : (
+                      <>
+                        <TouchableOpacity
+                          style={styles.datePickerButton}
+                          onPress={() => setShowStartDatePicker(true)}
+                        >
+                          <Text style={styles.datePickerButtonText}>
+                            {formatDate(startDate)}
+                          </Text>
+                          <Ionicons
+                            name="calendar-outline"
+                            size={20}
+                            color={COLORS.primary}
+                          />
+                        </TouchableOpacity>
+
+                        {showStartDatePicker && (
+                          <DateTimePicker
+                            value={startDate}
+                            mode="date"
+                            display="default"
+                            onChange={onStartDateChange}
+                            maximumDate={endDate}
+                          />
+                        )}
+                      </>
+                    )}
+                  </View>
+
+                  <View style={styles.datePicker}>
+                    <Text style={styles.datePickerLabel}>{t("historical.to")}</Text>
+                    {isWebPlatform ? (
+                      <TextInput
+                        style={styles.datePickerInput}
+                        value={endDateInput}
+                        onChangeText={handleEndDateInputChange}
+                        placeholder="YYYY-MM-DD"
+                        keyboardType="numeric"
+                        maxLength={10}
+                        autoComplete="off"
+                        autoCorrect={false}
+                      />
+                    ) : (
+                      <>
+                        <TouchableOpacity
+                          style={styles.datePickerButton}
+                          onPress={() => setShowEndDatePicker(true)}
+                        >
+                          <Text style={styles.datePickerButtonText}>
+                            {formatDate(endDate)}
+                          </Text>
+                          <Ionicons
+                            name="calendar-outline"
+                            size={20}
+                            color={COLORS.primary}
+                          />
+                        </TouchableOpacity>
+
+                        {showEndDatePicker && (
+                          <DateTimePicker
+                            value={endDate}
+                            mode="date"
+                            display="default"
+                            onChange={onEndDateChange}
+                            minimumDate={startDate}
+                          />
+                        )}
+                      </>
+                    )}
+                  </View>
+                </View>
+
+                <Button
+                  title={t("common.apply") || "Apply"}
+                  onPress={applyDateRange}
+                  style={styles.applyButton}
+                  loading={isDataLoading}
                 />
               </View>
 
@@ -275,11 +530,28 @@ const ForecastScreen = ({ navigation }) => {
                   />
                   <Text style={styles.optionText}>{t("forecast.compareHistorical")}</Text>
                 </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.optionButton}
+                  onPress={() => setUseModel(!useModel)}
+                >
+                  <Ionicons
+                    name={useModel ? "checkbox" : "square-outline"}
+                    size={24}
+                    color={COLORS.primary}
+                  />
+                  <Text style={styles.optionText}>Use AI Model for Prediction</Text>
+                </TouchableOpacity>
               </View>
             </Card>
 
             <Card style={styles.chartCard}>
-              <Text style={styles.chartTitle}>{t("forecast.predictedPrice")}</Text>
+              <Text style={styles.chartTitle}>
+                {priceData.usingModel ? "AI Model Prediction" : t("forecast.predictedPrice")}
+              </Text>
+              {priceData.message && (
+                <Text style={styles.messageText}>{priceData.message}</Text>
+              )}
 
               {getChartData() && (
                 <LineChart
@@ -316,7 +588,7 @@ const ForecastScreen = ({ navigation }) => {
                   <Text style={styles.tableHeaderCell}>{t("forecast.predictedPrice")}</Text>
                 </View>
 
-                {priceData.forecast.slice(0, forecastDays).map((item, index) => (
+                {priceData.forecast.slice(0, Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24))).map((item, index) => (
                   <View key={index} style={styles.tableRow}>
                     <Text style={styles.tableCell}>{new Date(item.date).toLocaleDateString()}</Text>
                     <Text style={styles.tableCell}>PKR {item.price}</Text>
@@ -362,17 +634,55 @@ const styles = StyleSheet.create({
     textAlign: "center",
     color: COLORS.text.primary,
   },
-  forecastDurationContainer: {
+  dateRangeContainer: {
     marginBottom: SPACING.large,
   },
-  forecastDurationLabel: {
+  dateRangeTitle: {
     fontSize: FONT.sizes.medium,
+    fontWeight: "bold",
     color: COLORS.text.primary,
+    marginBottom: SPACING.medium,
+    textAlign: "center",
+  },
+  datePickersContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: SPACING.medium,
+  },
+  datePicker: {
+    flex: 1,
+    marginHorizontal: SPACING.small,
+  },
+  datePickerLabel: {
+    fontSize: FONT.sizes.small,
+    color: COLORS.text.secondary,
     marginBottom: SPACING.small,
   },
-  slider: {
-    width: "100%",
-    height: 40,
+  datePickerInput: {
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 5,
+    paddingHorizontal: SPACING.medium,
+    paddingVertical: SPACING.small,
+    fontSize: FONT.sizes.medium,
+  },
+  datePickerButton: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 5,
+    paddingHorizontal: SPACING.medium,
+    paddingVertical: SPACING.small,
+  },
+  datePickerButtonText: {
+    fontSize: FONT.sizes.medium,
+    color: COLORS.text.primary,
+  },
+  applyButton: {
+    marginTop: SPACING.small,
+    backgroundColor: COLORS.primary,
   },
   optionsContainer: {
     marginBottom: SPACING.medium,
@@ -393,8 +703,14 @@ const styles = StyleSheet.create({
   chartTitle: {
     fontSize: FONT.sizes.large,
     fontWeight: "bold",
-    marginBottom: SPACING.medium,
+    marginBottom: SPACING.small,
     color: COLORS.text.primary,
+  },
+  messageText: {
+    fontSize: FONT.sizes.small,
+    color: COLORS.text.secondary,
+    marginBottom: SPACING.medium,
+    fontStyle: 'italic',
   },
   chart: {
     marginVertical: SPACING.medium,

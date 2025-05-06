@@ -85,14 +85,28 @@ const DashboardScreen = ({ navigation }) => {
   const [endDateInput, setEndDateInput] = useState(formatDateForInput(endDate));
   const [isWebPlatform] = useState(Platform.OS === "web");
 
-  // Time period options
-  const timePeriodOptions = [
-    { label: t("dashboard.day"), value: "day" },
-    { label: t("dashboard.week"), value: "week" },
-    { label: t("dashboard.month"), value: "month" },
-    { label: t("dashboard.year"), value: "year" },
-    { label: t("dashboard.threeYears") || "3 Years", value: "threeYears" },
-  ];
+  // Date validation function
+  const validateDate = (dateString) => {
+    // Check if the date string matches YYYY-MM-DD format
+    const regex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!regex.test(dateString)) return false;
+
+    // Check if the date is valid
+    const date = new Date(dateString);
+    const timestamp = date.getTime();
+    if (isNaN(timestamp)) return false;
+
+    // Check if the date components match the input
+    const parts = dateString.split('-');
+    const year = parseInt(parts[0], 10);
+    const month = parseInt(parts[1], 10) - 1; // JS months are 0-indexed
+    const day = parseInt(parts[2], 10);
+
+    const reconstructedDate = new Date(year, month, day);
+    return reconstructedDate.getFullYear() === year &&
+           reconstructedDate.getMonth() === month &&
+           reconstructedDate.getDate() === day;
+  };
 
   // Commodity options
   const commodityOptions = commodities.map((commodity) => ({
@@ -129,7 +143,7 @@ const DashboardScreen = ({ navigation }) => {
     checkApi();
   }, []);
 
-  // Load price data when selected commodity or date range changes
+  // Load price data when selected commodity or location changes
   useEffect(() => {
     if (isApiAvailable) {
       loadPriceData();
@@ -138,7 +152,7 @@ const DashboardScreen = ({ navigation }) => {
       const data = getCommodityData(selectedCommodity);
       setPriceData(data);
     }
-  }, [selectedCommodity, selectedLocation, startDate, endDate, isApiAvailable]);
+  }, [selectedCommodity, selectedLocation, isApiAvailable]);
 
   // Load price data
   const loadPriceData = async () => {
@@ -210,40 +224,13 @@ const DashboardScreen = ({ navigation }) => {
     }
   };
 
-  // Apply a predefined date range based on time period
-  const applyTimePeriod = (period) => {
-    // Use a date range that's more likely to have data
-    // For testing purposes, we'll use dates from 2023
-    const end = new Date(2023, 11, 31); // December 31, 2023
-    let start = new Date(2023, 0, 1); // January 1, 2023
+  // Apply the date range and fetch data
+  const applyDateRange = () => {
+    // We'll use the current startDate and endDate values
+    // which have already been validated during input
 
-    switch (period) {
-      case "day":
-        start = new Date(2023, 11, 30); // December 30, 2023
-        break;
-      case "week":
-        start = new Date(2023, 11, 24); // December 24, 2023
-        break;
-      case "month":
-        start = new Date(2023, 10, 30); // November 30, 2023
-        break;
-      case "year":
-        // Already set to January 1, 2023
-        break;
-      case "threeYears":
-        start = new Date(2021, 0, 1); // January 1, 2021 (3 years)
-        break;
-      default:
-        start = new Date(2023, 11, 24); // Default to week (December 24, 2023)
-    }
-
-    setStartDate(start);
-    setEndDate(end);
-    setTimePeriod(period);
-
-    // Update input fields for web
-    setStartDateInput(formatDateForInput(start));
-    setEndDateInput(formatDateForInput(end));
+    // Fetch data with the current date range
+    loadPriceData();
   };
 
   // Handle date change
@@ -261,28 +248,68 @@ const DashboardScreen = ({ navigation }) => {
     setEndDateInput(formatDateForInput(currentDate));
   };
 
-  // Handle web date input change
+  // Handle web date input change with real-time validation and formatting
   const handleStartDateInputChange = (text) => {
-    setStartDateInput(text);
-    try {
-      const date = parseDateFromInput(text);
+    // Only allow digits and hyphens
+    const sanitizedText = text.replace(/[^0-9-]/g, '');
+
+    // Auto-format as user types (YYYY-MM-DD)
+    let formattedText = sanitizedText;
+
+    // If we have 4 digits and no hyphen yet, add one
+    if (sanitizedText.length === 4 && !sanitizedText.includes('-')) {
+      formattedText = sanitizedText + '-';
+    }
+    // If we have 7 characters and only one hyphen, add another
+    else if (sanitizedText.length === 7 && sanitizedText.split('-').length === 2) {
+      formattedText = sanitizedText + '-';
+    }
+    // Limit to 10 characters (YYYY-MM-DD)
+    else if (sanitizedText.length > 10) {
+      formattedText = sanitizedText.substring(0, 10);
+    }
+
+    setStartDateInput(formattedText);
+
+    // If we have a complete date, validate it
+    if (formattedText.length === 10 && validateDate(formattedText)) {
+      const date = parseDateFromInput(formattedText);
+      // Only update if it's a valid date and not after the end date
       if (!isNaN(date.getTime()) && date <= endDate) {
         setStartDate(date);
       }
-    } catch (error) {
-      console.error("Invalid date format:", error);
     }
   };
 
   const handleEndDateInputChange = (text) => {
-    setEndDateInput(text);
-    try {
-      const date = parseDateFromInput(text);
+    // Only allow digits and hyphens
+    const sanitizedText = text.replace(/[^0-9-]/g, '');
+
+    // Auto-format as user types (YYYY-MM-DD)
+    let formattedText = sanitizedText;
+
+    // If we have 4 digits and no hyphen yet, add one
+    if (sanitizedText.length === 4 && !sanitizedText.includes('-')) {
+      formattedText = sanitizedText + '-';
+    }
+    // If we have 7 characters and only one hyphen, add another
+    else if (sanitizedText.length === 7 && sanitizedText.split('-').length === 2) {
+      formattedText = sanitizedText + '-';
+    }
+    // Limit to 10 characters (YYYY-MM-DD)
+    else if (sanitizedText.length > 10) {
+      formattedText = sanitizedText.substring(0, 10);
+    }
+
+    setEndDateInput(formattedText);
+
+    // If we have a complete date, validate it
+    if (formattedText.length === 10 && validateDate(formattedText)) {
+      const date = parseDateFromInput(formattedText);
+      // Only update if it's a valid date, after the start date, and not in the future
       if (!isNaN(date.getTime()) && date >= startDate && date <= new Date()) {
         setEndDate(date);
       }
-    } catch (error) {
-      console.error("Invalid date format:", error);
     }
   };
 
@@ -326,8 +353,9 @@ const DashboardScreen = ({ navigation }) => {
     let chartData = [...priceData.history];
 
     // If we have too many data points, we need to sample them to avoid overcrowding the chart
-    // Use more data points for 3-year view
-    const MAX_DATA_POINTS = timePeriod === "threeYears" ? 36 : 15;
+    // Calculate max data points based on date range
+    const daysDiff = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
+    const MAX_DATA_POINTS = daysDiff > 365 ? 36 : 15; // More points for longer ranges
 
     if (chartData.length > MAX_DATA_POINTS) {
       // Sample the data to get a reasonable number of points
@@ -348,31 +376,28 @@ const DashboardScreen = ({ navigation }) => {
       chartData = sampledData;
     }
 
-    // Format the dates for display
+    // Format the dates for display based on date range
     const formatChartDate = (dateStr) => {
       const date = new Date(dateStr);
-      if (timePeriod === "threeYears") {
-        // For 3-year view, show month/year (e.g., "Jan/21")
-        const monthNames = [
-          "Jan",
-          "Feb",
-          "Mar",
-          "Apr",
-          "May",
-          "Jun",
-          "Jul",
-          "Aug",
-          "Sep",
-          "Oct",
-          "Nov",
-          "Dec",
-        ];
+      const monthNames = [
+        "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+      ];
+
+      // Calculate the date range span in days
+      const daysDiff = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
+
+      if (daysDiff > 365) {
+        // For long ranges (> 1 year), show month/year (e.g., "Jan/21")
         return `${monthNames[date.getMonth()]}/${date
           .getFullYear()
           .toString()
           .substr(2, 2)}`;
+      } else if (daysDiff > 60) {
+        // For medium ranges (2-12 months), show month/day (e.g., "Jan/15")
+        return `${monthNames[date.getMonth()]}/${date.getDate()}`;
       } else {
-        // For other views, show day/month (e.g., "15/4")
+        // For short ranges (< 60 days), show day/month (e.g., "15/4")
         return `${date.getDate()}/${date.getMonth() + 1}`;
       }
     };
@@ -450,14 +475,6 @@ const DashboardScreen = ({ navigation }) => {
             onSelect={setSelectedLocation}
             style={styles.dropdown}
           />
-
-          <Dropdown
-            label={t("dashboard.timePeriod")}
-            data={timePeriodOptions}
-            value={timePeriod}
-            onSelect={(value) => applyTimePeriod(value)}
-            style={styles.dropdown}
-          />
         </View>
 
         <Card style={styles.dateRangeCard}>
@@ -473,6 +490,9 @@ const DashboardScreen = ({ navigation }) => {
                   onChangeText={handleStartDateInputChange}
                   placeholder="YYYY-MM-DD"
                   keyboardType="numeric"
+                  maxLength={10}
+                  autoComplete="off"
+                  autoCorrect={false}
                 />
               ) : (
                 <>
@@ -512,6 +532,9 @@ const DashboardScreen = ({ navigation }) => {
                   onChangeText={handleEndDateInputChange}
                   placeholder="YYYY-MM-DD"
                   keyboardType="numeric"
+                  maxLength={10}
+                  autoComplete="off"
+                  autoCorrect={false}
                 />
               ) : (
                 <>
@@ -544,9 +567,12 @@ const DashboardScreen = ({ navigation }) => {
             </View>
           </View>
 
-          <TouchableOpacity style={styles.applyButton} onPress={loadPriceData}>
-            <Text style={styles.applyButtonText}>{t("common.apply")}</Text>
-          </TouchableOpacity>
+          <Button
+            title={t("common.apply") || "Apply"}
+            onPress={applyDateRange}
+            style={styles.applyButton}
+            loading={isDataLoading}
+          />
         </Card>
 
         {isDataLoading ? (
@@ -620,21 +646,21 @@ const DashboardScreen = ({ navigation }) => {
                 <LineChart
                   data={getChartData()}
                   width={screenWidth - 40}
-                  height={timePeriod === "threeYears" ? 280 : 220}
+                  height={220}
                   chartConfig={chartConfig}
                   bezier
                   style={styles.chart}
                   yAxisSuffix=" PKR"
                   yAxisInterval={1}
                   fromZero={true}
-                  withDots={timePeriod !== "threeYears"} // Hide dots for 3-year view to reduce clutter
+                  withDots={true}
                   withInnerLines={true}
                   withOuterLines={true}
-                  withVerticalLines={timePeriod !== "threeYears"} // Hide vertical lines for 3-year view
+                  withVerticalLines={true}
                   withHorizontalLines={true}
                   withVerticalLabels={true}
                   withHorizontalLabels={true}
-                  horizontalLabelRotation={timePeriod === "threeYears" ? 45 : 0} // Rotate labels for 3-year view
+                  horizontalLabelRotation={0}
                 />
               ) : (
                 <View style={styles.noDataContainer}>
