@@ -217,8 +217,6 @@ const styles = StyleSheet.create({
     width: isSmallScreen ? 130 : 160,
     height: isSmallScreen ? 130 : 160,
     borderRadius: isSmallScreen ? 65 : 80,
-    backgroundColor: COLORS.white,
-    justifyContent: "center",
     alignSelf: "center",
     elevation: 5,
     shadowColor: "#000",
@@ -228,9 +226,9 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   logo: {
-    width: isSmallScreen ? 120 : 150,
-    height: isSmallScreen ? 120 : 150,
-    borderRadius: isSmallScreen ? 60 : 75,
+    width: isSmallScreen ? 130 : 160,
+    height: isSmallScreen ? 130 : 160,
+    borderRadius: isSmallScreen ? 65 : 80,
   },
   formCard: {
     padding: 0,

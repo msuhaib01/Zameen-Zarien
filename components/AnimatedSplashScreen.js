@@ -1,13 +1,13 @@
 import React, { useEffect, useRef } from 'react';
-import { 
-  View, 
-  Image, 
-  StyleSheet, 
-  Animated, 
-  Dimensions, 
-  StatusBar, 
+import {
+  View,
+  Image,
+  StyleSheet,
+  Animated,
+  Dimensions,
+  StatusBar,
   Platform,
-  Easing 
+  Easing
 } from 'react-native';
 import { COLORS } from '../theme';
 
@@ -18,13 +18,13 @@ const AnimatedSplashScreen = ({ onAnimationComplete }) => {
   const logoScale = useRef(new Animated.Value(0.8)).current;
   const logoOpacity = useRef(new Animated.Value(1)).current;
   const backgroundOpacity = useRef(new Animated.Value(1)).current;
-  
+
   useEffect(() => {
     // Start animation sequence when component mounts
     const animations = [
       // Step 1: Hold the logo for a moment
       Animated.delay(400),
-      
+
       // Step 2: Zoom out the logo and fade out the background
       Animated.parallel([
         Animated.timing(logoScale, {
@@ -61,7 +61,7 @@ const AnimatedSplashScreen = ({ onAnimationComplete }) => {
     <View style={styles.mainContainer}>
       <StatusBar backgroundColor={COLORS.primary} barStyle="light-content" translucent={false} />
       <Animated.View style={[
-        styles.container, 
+        styles.container,
         { opacity: backgroundOpacity }
       ]}>
         <Animated.View style={[
@@ -73,9 +73,9 @@ const AnimatedSplashScreen = ({ onAnimationComplete }) => {
             ]
           }
         ]}>
-          <Image 
-            source={require('../assets/logo-placeholder.png')} 
-            style={styles.logo} 
+          <Image
+            source={require('../assets/logo-placeholder.png')}
+            style={styles.logo}
             resizeMode="contain"
           />
         </Animated.View>
@@ -111,9 +111,6 @@ const styles = StyleSheet.create({
     width: 150,
     height: 150,
     borderRadius: 75, // Make the container circular
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
     overflow: 'hidden',
     elevation: 8,
     shadowColor: '#000',
@@ -122,10 +119,10 @@ const styles = StyleSheet.create({
     shadowRadius: 5,
   },
   logo: {
-    width: 120,
-    height: 120,
-    borderRadius: 60, // Make the logo circular
+    width: 150,
+    height: 150,
+    borderRadius: 75, // Make the logo circular to match container
   }
 });
 
-export default AnimatedSplashScreen; 
+export default AnimatedSplashScreen;

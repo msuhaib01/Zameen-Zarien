@@ -351,14 +351,14 @@ const styles = StyleSheet.create({
     width: 70,
     height: 70,
     borderRadius: 35,
-    backgroundColor: COLORS.background.tertiary,
     overflow: "hidden",
     marginRight: SPACING.large,
     ...SHADOWS.small,
   },
   profileImage: {
-    width: "100%",
-    height: "100%",
+    width: 70,
+    height: 70,
+    borderRadius: 35,
   },
   profileInfo: {
     flex: 1,
