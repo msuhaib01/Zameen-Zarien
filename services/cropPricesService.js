@@ -170,9 +170,28 @@ export const getForecast = async (commodity, location, days = 7, useModel = true
 };
 
 // Get price prediction using the trained model
-export const getModelPrediction = async (commodity, location, days = 7) => {
+export const getModelPrediction = async (commodity, location, days = 7, startDate = null, endDate = null) => {
   try {
     const params = { commodity, location, days };
+
+    // If start and end dates are provided, use them instead of days
+    if (startDate && endDate) {
+      // Format dates if they are Date objects
+      const formattedStartDate = typeof startDate === "string"
+        ? startDate
+        : startDate.toISOString().split("T")[0];
+      const formattedEndDate = typeof endDate === "string"
+        ? endDate
+        : endDate.toISOString().split("T")[0];
+
+      params.start_date = formattedStartDate;
+      params.end_date = formattedEndDate;
+
+      console.log(`Using date range for prediction: ${formattedStartDate} to ${formattedEndDate}`);
+    } else {
+      console.log(`Using days for prediction: ${days} days`);
+    }
+
     const response = await axios.get(
       `${API_BASE_URL}/api/crop-prices/model-predict/`,
       { params }

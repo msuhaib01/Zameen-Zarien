@@ -263,11 +263,21 @@ const ForecastScreen = ({ navigation }) => {
         return
       }
 
+      // Format dates for API
+      const formattedStartDate = startDate.toISOString().split('T')[0]
+      const formattedEndDate = endDate.toISOString().split('T')[0]
+
       // Get forecast data - either using the model or simple linear prediction
       let forecastData;
       if (useModel) {
-        // Use the trained model for prediction
-        forecastData = await getModelPrediction(commodityName, locationName, forecastDays)
+        // Use the trained model for prediction with date range
+        forecastData = await getModelPrediction(
+          commodityName,
+          locationName,
+          forecastDays,
+          startDate,
+          endDate
+        )
       } else {
         // Use simple linear prediction
         forecastData = await getForecast(commodityName, locationName, forecastDays, false)
