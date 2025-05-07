@@ -367,7 +367,7 @@ const ForecastScreen = ({ navigation }) => {
       datasets,
       legend: [
         t("forecast.predictedPrice"),
-        ...(compareWithHistorical ? [t("historical.title")] : []),
+        ...(compareWithHistorical ? [t("forecast.actualPrice")] : []),
       ],
     }
   }
@@ -583,7 +583,7 @@ const ForecastScreen = ({ navigation }) => {
                 {compareWithHistorical && (
                   <View style={styles.legendItem}>
                     <View style={[styles.legendColor, { backgroundColor: COLORS.accent }]} />
-                    <Text style={styles.legendText}>{t("historical.title")}</Text>
+                    <Text style={styles.legendText}>{t("forecast.actualPrice")}</Text>
                   </View>
                 )}
               </View>
@@ -596,14 +596,28 @@ const ForecastScreen = ({ navigation }) => {
                 <View style={styles.tableHeader}>
                   <Text style={styles.tableHeaderCell}>{t("common.date")}</Text>
                   <Text style={styles.tableHeaderCell}>{t("forecast.predictedPrice")}</Text>
+                  {compareWithHistorical && priceData.history && (
+                    <Text style={styles.tableHeaderCell}>{t("forecast.actualPrice")}</Text>
+                  )}
                 </View>
 
-                {priceData.forecast.slice(0, Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24))).map((item, index) => (
-                  <View key={index} style={styles.tableRow}>
-                    <Text style={styles.tableCell}>{new Date(item.date).toLocaleDateString()}</Text>
-                    <Text style={styles.tableCell}>PKR {item.price}</Text>
-                  </View>
-                ))}
+                {priceData.forecast.slice(0, Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24))).map((item, index) => {
+                  // Find matching historical data for this date if comparing
+                  const historicalItem = compareWithHistorical && priceData.history ?
+                    priceData.history.find(h => new Date(h.date).toDateString() === new Date(item.date).toDateString()) : null;
+
+                  return (
+                    <View key={index} style={styles.tableRow}>
+                      <Text style={styles.tableCell}>{new Date(item.date).toLocaleDateString()}</Text>
+                      <Text style={styles.tableCell}>PKR {item.price}</Text>
+                      {compareWithHistorical && priceData.history && (
+                        <Text style={styles.tableCell}>
+                          {historicalItem ? `PKR ${historicalItem.price}` : "-"}
+                        </Text>
+                      )}
+                    </View>
+                  );
+                })}
               </View>
             </View>
           </>

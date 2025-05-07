@@ -13,7 +13,7 @@ import ForgotPasswordScreen from "../screens/ForgotPasswordScreen";
 import DashboardScreen from "../screens/DashboardScreen";
 import ForecastScreen from "../screens/ForecastScreen";
 import AlertsScreen from "../screens/AlertsScreen";
-import HistoricalDataScreen from "../screens/HistoricalDataScreen";
+import RealTimeScreen from "../screens/RealTimeScreen";
 import NotificationsScreen from "../screens/NotificationsScreen";
 import SettingsScreen from "../screens/SettingsScreen";
 
@@ -69,8 +69,8 @@ const TabNavigator = () => {
             iconName = focused ? "trending-up" : "trending-up-outline";
           } else if (route.name === "Alerts") {
             iconName = focused ? "notifications" : "notifications-outline";
-          } else if (route.name === "Historical") {
-            iconName = focused ? "bar-chart" : "bar-chart-outline";
+          } else if (route.name === "RealTime") {
+            iconName = focused ? "time" : "time-outline";
           } else if (route.name === "Settings") {
             iconName = focused ? "settings" : "settings-outline";
           }
@@ -95,9 +95,9 @@ const TabNavigator = () => {
         options={{ tabBarLabel: t("alerts.title") }}
       />
       <Tab.Screen
-        name="Historical"
-        component={HistoricalDataScreen}
-        options={{ tabBarLabel: t("historical.title") }}
+        name="RealTime"
+        component={RealTimeScreen}
+        options={{ tabBarLabel: t("realTime.title") }}
       />
       <Tab.Screen
         name="Settings"

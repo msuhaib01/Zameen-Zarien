@@ -53,7 +53,7 @@ const SettingsScreen = ({ navigation }) => {
   const defaultViewOptions = [
     { label: t("dashboard.title"), value: "dashboard" },
     { label: t("forecast.title"), value: "forecast" },
-    { label: t("historical.title"), value: "historical" },
+    { label: t("realTime.title"), value: "realTime" },
     { label: t("alerts.title"), value: "alerts" },
   ];
 

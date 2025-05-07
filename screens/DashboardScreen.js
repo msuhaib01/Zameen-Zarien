@@ -707,12 +707,12 @@ const DashboardScreen = ({ navigation }) => {
               />
 
               <Button
-                title={t("dashboard.viewHistorical")}
-                onPress={() => navigation.navigate("Historical")}
+                title={t("dashboard.viewRealTime")}
+                onPress={() => navigation.navigate("RealTime")}
                 type="primary"
                 icon={
                   <Ionicons
-                    name="bar-chart-outline"
+                    name="time-outline"
                     size={18}
                     color={COLORS.white}
                     style={styles.buttonIcon}
