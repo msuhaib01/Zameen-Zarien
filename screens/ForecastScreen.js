@@ -109,7 +109,6 @@ const ForecastScreen = ({ navigation }) => {
   const [priceData, setPriceData] = useState(null)
   const [isDataLoading, setIsDataLoading] = useState(false)
   const [compareWithHistorical, setCompareWithHistorical] = useState(false)
-  const [useModel, setUseModel] = useState(true)
 
   // Date range state
   const today = new Date()
@@ -147,7 +146,7 @@ const ForecastScreen = ({ navigation }) => {
     }
 
     fetchData()
-  }, [selectedCommodity, selectedLocation, compareWithHistorical, useModel])
+  }, [selectedCommodity, selectedLocation, compareWithHistorical])
 
   // Handle date change
   const onStartDateChange = (event, selectedDate) => {
@@ -267,21 +266,14 @@ const ForecastScreen = ({ navigation }) => {
       const formattedStartDate = startDate.toISOString().split('T')[0]
       const formattedEndDate = endDate.toISOString().split('T')[0]
 
-      // Get forecast data - either using the model or simple linear prediction
-      let forecastData;
-      if (useModel) {
-        // Use the trained model for prediction with date range
-        forecastData = await getModelPrediction(
-          commodityName,
-          locationName,
-          forecastDays,
-          startDate,
-          endDate
-        )
-      } else {
-        // Use simple linear prediction
-        forecastData = await getForecast(commodityName, locationName, forecastDays, false)
-      }
+      // Get forecast data using the AI model
+      let forecastData = await getModelPrediction(
+        commodityName,
+        locationName,
+        forecastDays,
+        startDate,
+        endDate
+      )
 
       // Get historical data for comparison if needed
       let historicalData = null
@@ -305,7 +297,7 @@ const ForecastScreen = ({ navigation }) => {
         average: historicalData ? historicalData.stats.average : 0,
         highest: historicalData ? historicalData.stats.highest : 0,
         lowest: historicalData ? historicalData.stats.lowest : 0,
-        usingModel: forecastData.using_model !== undefined ? forecastData.using_model : useModel,
+        usingModel: forecastData.using_model !== undefined ? forecastData.using_model : true,
         message: forecastData.message || ''
       }
 
@@ -540,24 +532,12 @@ const ForecastScreen = ({ navigation }) => {
                   />
                   <Text style={styles.optionText}>{t("forecast.compareHistorical")}</Text>
                 </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={styles.optionButton}
-                  onPress={() => setUseModel(!useModel)}
-                >
-                  <Ionicons
-                    name={useModel ? "checkbox" : "square-outline"}
-                    size={24}
-                    color={COLORS.primary}
-                  />
-                  <Text style={styles.optionText}>Use AI Model for Prediction</Text>
-                </TouchableOpacity>
               </View>
             </Card>
 
             <Card style={styles.chartCard}>
               <Text style={styles.chartTitle}>
-                {priceData.usingModel ? "AI Model Prediction" : t("forecast.predictedPrice")}
+                {"AI Model Prediction"}
               </Text>
               {priceData.message && (
                 <Text style={styles.messageText}>{priceData.message}</Text>
