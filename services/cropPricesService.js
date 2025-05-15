@@ -4,15 +4,36 @@ import { API_BASE_URL } from "../config";
 // Check if the API is available
 export const checkApiAvailability = async () => {
   try {
+    console.log("Checking API availability");
+
+    // Try to make a simple request to the API
     const response = await axios.get(`${API_BASE_URL}/api/test-connection/`, {
-      timeout: 5000,
+      timeout: 5000, // 5 second timeout
     });
+
+    // If we get here, the API is available
+    console.log("API is available");
     return { available: true, data: response.data };
   } catch (error) {
     console.error("API availability check failed:", error);
+
+    // Determine the error type
+    let errorMessage = "Unknown error";
+    if (error.code === "ECONNABORTED") {
+      errorMessage = "Connection timeout";
+    } else if (error.code === "ERR_NETWORK") {
+      errorMessage = "Network error";
+    } else if (error.response) {
+      errorMessage = `Server error: ${error.response.status}`;
+    } else if (error.request) {
+      errorMessage = "No response from server";
+    } else {
+      errorMessage = error.message;
+    }
+
     return {
       available: false,
-      error: error.message,
+      error: errorMessage,
       details: error.response ? error.response.data : "No response from server",
     };
   }
@@ -264,42 +285,7 @@ export const compareLocations = async (
   }
 };
 
-// Check if the API is available
-export const checkApiAvailability = async () => {
-  try {
-    console.log("Checking API availability");
-
-    // Try to make a simple request to the API
-    const response = await axios.get(`${API_BASE_URL}/api/health-check/`, {
-      timeout: 5000, // 5 second timeout
-    });
-
-    // If we get here, the API is available
-    console.log("API is available");
-    return { available: true };
-  } catch (error) {
-    console.error("API availability check failed:", error);
-
-    // Determine the error type
-    let errorMessage = "Unknown error";
-    if (error.code === "ECONNABORTED") {
-      errorMessage = "Connection timeout";
-    } else if (error.code === "ERR_NETWORK") {
-      errorMessage = "Network error";
-    } else if (error.response) {
-      errorMessage = `Server error: ${error.response.status}`;
-    } else if (error.request) {
-      errorMessage = "No response from server";
-    } else {
-      errorMessage = error.message;
-    }
-
-    return {
-      available: false,
-      error: errorMessage,
-    };
-  }
-};
+// This function is already defined at the top of the file
 
 // Get real-time data from the AIMS table
 export const getRealTimeData = async (commodity = null, location = null) => {
