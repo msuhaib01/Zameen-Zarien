@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import {
   View,
   Text,
@@ -22,96 +22,79 @@ import Dropdown from "../components/Dropdown"
 import Input from "../components/Input"
 import ToggleSwitch from "../components/ToggleSwitch"
 import { COLORS, FONT, SPACING } from "../theme"
-import { useApp } from "../context/AppContext"
-import { getPriceHistory } from "../services/cropPricesService"
+
+const fakeCommodities = [
+  { id: 1, name: "Wheat", name_ur: "گندم" },
+  { id: 2, name: "Rice", name_ur: "چاول" },
+  { id: 3, name: "Sugar", name_ur: "چینی" },
+]
+
+const fakeInitialAlerts = [
+  {
+    id: "1",
+    commodityId: 1,
+    threshold: 205,
+    condition: "above",
+    notificationMethods: { push: true, sms: false, email: true },
+    enabled: true,
+    createdAt: "2023-01-05T10:30:00Z",
+  },
+  {
+    id: "2",
+    commodityId: 2,
+    threshold: 140,
+    condition: "below",
+    notificationMethods: { push: true, sms: true, email: false },
+    enabled: false,
+    createdAt: "2023-01-07T14:15:00Z",
+  },
+]
 
 const AlertsScreen = ({ navigation }) => {
   const { t } = useTranslation()
-  const { commodities, alerts, addAlert, updateAlert, deleteAlert, getCommodityData } = useApp()
 
+  const [alerts, setAlerts] = useState(fakeInitialAlerts)
   const [refreshing, setRefreshing] = useState(false)
   const [showAddModal, setShowAddModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
   const [showHistoryModal, setShowHistoryModal] = useState(false)
   const [selectedAlert, setSelectedAlert] = useState(null)
   const [alertHistory, setAlertHistory] = useState([])
-  const [currentPrices, setCurrentPrices] = useState({})
+  const [currentPrices, setCurrentPrices] = useState({ 1: 210, 2: 135, 3: 120 })
 
-  // Load current prices when component mounts
-  useEffect(() => {
-    const loadCurrentPrices = async () => {
-      try {
-        const prices = {}
-        for (const alert of alerts) {
-          prices[alert.commodityId] = await getCurrentPrice(alert.commodityId)
-        }
-        setCurrentPrices(prices)
-      } catch (error) {
-        console.error("Error loading current prices:", error)
-      }
-    }
-
-    loadCurrentPrices()
-  }, [alerts])
-
-  // New alert form state
   const [formCommodity, setFormCommodity] = useState(1)
   const [formThreshold, setFormThreshold] = useState("")
-  const [formCondition, setFormCondition] = useState("above") // 'above' or 'below'
+  const [formCondition, setFormCondition] = useState("above")
   const [formNotificationMethods, setFormNotificationMethods] = useState({
     push: true,
     sms: false,
     email: false,
   })
 
-  // Commodity options
-  const commodityOptions = commodities.map((commodity) => ({
+  const commodityOptions = fakeCommodities.map((commodity) => ({
     label: t("common.language") === "en" ? commodity.name : commodity.name_ur,
     value: commodity.id,
   }))
 
-  // Condition options
   const conditionOptions = [
     { label: t("alerts.above"), value: "above" },
     { label: t("alerts.below"), value: "below" },
   ]
 
-  // Handle refresh
   const onRefresh = async () => {
     setRefreshing(true)
-    try {
-      // In a real app, you would fetch fresh alerts data here
-      // For now, we'll just wait a bit to simulate a refresh
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-
-      // Update current prices for all alerts
-      const newPrices = { ...currentPrices }
-      for (const alert of alerts) {
-        newPrices[alert.commodityId] = await getCurrentPrice(alert.commodityId)
-      }
-      setCurrentPrices(newPrices)
-    } catch (error) {
-      console.error("Error refreshing data:", error)
-    } finally {
-      setRefreshing(false)
-    }
+    await new Promise((resolve) => setTimeout(resolve, 500))
+    setRefreshing(false)
   }
 
-  // Open add alert modal
   const openAddModal = () => {
-    // Reset form
     setFormCommodity(1)
     setFormThreshold("")
     setFormCondition("above")
-    setFormNotificationMethods({
-      push: true,
-      sms: false,
-      email: false,
-    })
+    setFormNotificationMethods({ push: true, sms: false, email: false })
     setShowAddModal(true)
   }
 
-  // Open edit alert modal
   const openEditModal = (alert) => {
     setSelectedAlert(alert)
     setFormCommodity(alert.commodityId)
@@ -121,132 +104,74 @@ const AlertsScreen = ({ navigation }) => {
     setShowEditModal(true)
   }
 
-  // Open alert history modal
   const openHistoryModal = (alert) => {
     setSelectedAlert(alert)
-    // In a real app, you would fetch the alert history from the server
-    // For demo purposes, we'll generate some mock history
     const mockHistory = [
-      {
-        id: "1",
-        date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-        price: Number.parseInt(alert.threshold) + 5,
-        triggered: true,
-      },
-      {
-        id: "2",
-        date: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-        price: Number.parseInt(alert.threshold) - 2,
-        triggered: false,
-      },
-      {
-        id: "3",
-        date: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-        price: Number.parseInt(alert.threshold) + 10,
-        triggered: true,
-      },
+      { id: "1", date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), price: Number.parseInt(alert.threshold) + 5, triggered: true },
+      { id: "2", date: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(), price: Number.parseInt(alert.threshold) - 2, triggered: false },
+      { id: "3", date: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(), price: Number.parseInt(alert.threshold) + 10, triggered: true },
     ]
     setAlertHistory(mockHistory)
     setShowHistoryModal(true)
   }
 
-  // Handle add alert
   const handleAddAlert = () => {
     if (!formThreshold) {
       alert(t("validation.enterThreshold"))
       return
     }
-
     const newAlert = {
+      id: Date.now().toString(),
       commodityId: formCommodity,
       threshold: Number.parseInt(formThreshold),
       condition: formCondition,
       notificationMethods: formNotificationMethods,
       enabled: true,
+      createdAt: new Date().toISOString(),
     }
-
-    addAlert(newAlert)
+    setAlerts((prev) => [...prev, newAlert])
     setShowAddModal(false)
   }
 
-  // Handle edit alert
   const handleEditAlert = () => {
     if (!formThreshold) {
       alert(t("validation.enterThreshold"))
       return
     }
-
-    const updatedAlert = {
-      ...selectedAlert,
+    setAlerts((prev) => prev.map((a) => a.id === selectedAlert.id ? {
+      ...a,
       commodityId: formCommodity,
       threshold: Number.parseInt(formThreshold),
       condition: formCondition,
       notificationMethods: formNotificationMethods,
-    }
-
-    updateAlert(selectedAlert.id, updatedAlert)
+    } : a))
     setShowEditModal(false)
   }
 
-  // Handle delete alert
   const handleDeleteAlert = (alertId) => {
-    deleteAlert(alertId)
+    setAlerts((prev) => prev.filter((a) => a.id !== alertId))
   }
 
-  // Toggle alert enabled status
   const toggleAlertEnabled = (alertId, currentStatus) => {
-    updateAlert(alertId, { enabled: !currentStatus })
+    setAlerts((prev) => prev.map((a) => a.id === alertId ? { ...a, enabled: !a.enabled } : a))
   }
 
-  // Toggle notification method
   const toggleNotificationMethod = (method) => {
-    setFormNotificationMethods((prev) => ({
-      ...prev,
-      [method]: !prev[method],
-    }))
+    setFormNotificationMethods((prev) => ({ ...prev, [method]: !prev[method] }))
   }
 
-  // Format date
   const formatDate = (dateString) => {
     const date = new Date(dateString)
     return `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`
   }
 
-  // Get commodity name
   const getCommodityName = (commodityId) => {
-    const commodity = commodities.find((c) => c.id === commodityId)
+    const commodity = fakeCommodities.find((c) => c.id === commodityId)
     return t("common.language") === "en" ? commodity?.name : commodity?.name_ur
   }
 
-  // Get current price for a commodity
-  const getCurrentPrice = async (commodityId) => {
-    try {
-      const commodityName = commodities.find(c => c.id === commodityId)?.name
-      if (!commodityName) return "-"
-
-      // Use the first location for simplicity
-      const locationName = "Lahore"
-
-      // Get the latest price data
-      const today = new Date()
-      const thirtyDaysAgo = new Date()
-      thirtyDaysAgo.setDate(today.getDate() - 30)
-
-      const formattedStartDate = thirtyDaysAgo.toISOString().split('T')[0]
-      const formattedEndDate = today.toISOString().split('T')[0]
-
-      const data = await getPriceHistory(
-        commodityName,
-        locationName,
-        formattedStartDate,
-        formattedEndDate
-      )
-
-      return data?.stats?.current || "-"
-    } catch (error) {
-      console.error("Error getting current price:", error)
-      return "-"
-    }
+  const getCurrentPrice = (commodityId) => {
+    return currentPrices[commodityId] || "-"
   }
 
   return (
@@ -295,7 +220,7 @@ const AlertsScreen = ({ navigation }) => {
 
                   <View style={styles.alertInfo}>
                     <Text style={styles.alertInfoLabel}>{t("alerts.currentPrice")}:</Text>
-                    <Text style={styles.alertInfoValue}>PKR {currentPrices[alert.commodityId] || "-"}</Text>
+                    <Text style={styles.alertInfoValue}>PKR {getCurrentPrice(alert.commodityId)}</Text>
                   </View>
 
                   <View style={styles.alertInfo}>
@@ -346,7 +271,6 @@ const AlertsScreen = ({ navigation }) => {
         )}
       </ScrollView>
 
-      {/* Add Alert Modal */}
       <Modal visible={showAddModal} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
@@ -416,7 +340,6 @@ const AlertsScreen = ({ navigation }) => {
         </View>
       </Modal>
 
-      {/* Edit Alert Modal */}
       <Modal visible={showEditModal} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
@@ -486,7 +409,6 @@ const AlertsScreen = ({ navigation }) => {
         </View>
       </Modal>
 
-      {/* Alert History Modal */}
       <Modal visible={showHistoryModal} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
