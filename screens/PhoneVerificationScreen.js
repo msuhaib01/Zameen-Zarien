@@ -15,6 +15,7 @@ import {
 } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
+import { API_BASE_URL } from "../config";
 
 import Header from "../components/Header";
 import Input from "../components/Input";
@@ -42,18 +43,16 @@ const PhoneVerificationScreen = ({ navigation }) => {
 
     try {
       console.log("Sending verification code to:", phoneNumber);
-      const response = await fetch(
-        "http://localhost:8000/auth/create-account/",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            phone_number: phoneNumber,
-          }),
-        }
-      );
+      console.log("Using API URL:", `${API_BASE_URL}/auth/create-account/`);
+      const response = await fetch(`${API_BASE_URL}/auth/create-account/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          phone_number: phoneNumber,
+        }),
+      });
 
       console.log("Response status:", response.status);
       const data = await response.json();
