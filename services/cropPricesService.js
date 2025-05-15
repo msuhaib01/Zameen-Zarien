@@ -155,7 +155,12 @@ export const getPriceHistory = async (
 };
 
 // Get price forecast for a specific commodity and location
-export const getForecast = async (commodity, location, days = 7, useModel = true) => {
+export const getForecast = async (
+  commodity,
+  location,
+  days = 7,
+  useModel = true
+) => {
   try {
     const params = { commodity, location, days, use_model: useModel };
     const response = await axios.get(
@@ -170,24 +175,34 @@ export const getForecast = async (commodity, location, days = 7, useModel = true
 };
 
 // Get price prediction using the trained model
-export const getModelPrediction = async (commodity, location, days = 7, startDate = null, endDate = null) => {
+export const getModelPrediction = async (
+  commodity,
+  location,
+  days = 7,
+  startDate = null,
+  endDate = null
+) => {
   try {
     const params = { commodity, location, days };
 
     // If start and end dates are provided, use them instead of days
     if (startDate && endDate) {
       // Format dates if they are Date objects
-      const formattedStartDate = typeof startDate === "string"
-        ? startDate
-        : startDate.toISOString().split("T")[0];
-      const formattedEndDate = typeof endDate === "string"
-        ? endDate
-        : endDate.toISOString().split("T")[0];
+      const formattedStartDate =
+        typeof startDate === "string"
+          ? startDate
+          : startDate.toISOString().split("T")[0];
+      const formattedEndDate =
+        typeof endDate === "string"
+          ? endDate
+          : endDate.toISOString().split("T")[0];
 
       params.start_date = formattedStartDate;
       params.end_date = formattedEndDate;
 
-      console.log(`Using date range for prediction: ${formattedStartDate} to ${formattedEndDate}`);
+      console.log(
+        `Using date range for prediction: ${formattedStartDate} to ${formattedEndDate}`
+      );
     } else {
       console.log(`Using days for prediction: ${days} days`);
     }
@@ -246,5 +261,93 @@ export const compareLocations = async (
   } catch (error) {
     console.error("Error comparing locations:", error);
     throw error;
+  }
+};
+
+// Check if the API is available
+export const checkApiAvailability = async () => {
+  try {
+    console.log("Checking API availability");
+
+    // Try to make a simple request to the API
+    const response = await axios.get(`${API_BASE_URL}/api/health-check/`, {
+      timeout: 5000, // 5 second timeout
+    });
+
+    // If we get here, the API is available
+    console.log("API is available");
+    return { available: true };
+  } catch (error) {
+    console.error("API availability check failed:", error);
+
+    // Determine the error type
+    let errorMessage = "Unknown error";
+    if (error.code === "ECONNABORTED") {
+      errorMessage = "Connection timeout";
+    } else if (error.code === "ERR_NETWORK") {
+      errorMessage = "Network error";
+    } else if (error.response) {
+      errorMessage = `Server error: ${error.response.status}`;
+    } else if (error.request) {
+      errorMessage = "No response from server";
+    } else {
+      errorMessage = error.message;
+    }
+
+    return {
+      available: false,
+      error: errorMessage,
+    };
+  }
+};
+
+// Get real-time data from the AIMS table
+export const getRealTimeData = async (commodity = null, location = null) => {
+  try {
+    console.log("Fetching real-time data from AIMS table");
+
+    // Build params object with optional filters
+    const params = {};
+    if (commodity) params.commodity = commodity;
+    if (location) params.location = location;
+
+    console.log("API URL:", `${API_BASE_URL}/api/aims-table/`);
+    console.log("Params:", params);
+
+    const response = await axios.get(`${API_BASE_URL}/api/aims-table/`, {
+      params,
+    });
+
+    // Log the response for debugging
+    console.log("API Response received");
+
+    // Check if we have data
+    if (!response.data) {
+      console.warn("API returned empty response");
+      throw new Error("Empty response received from server");
+    }
+
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching real-time data:", error);
+
+    // Add more context to the error
+    if (error.response) {
+      console.error(
+        "Server responded with error:",
+        error.response.status,
+        error.response.data
+      );
+      throw new Error(
+        `Server error: ${error.response.status} - ${
+          error.response.data.error || "Unknown error"
+        }`
+      );
+    } else if (error.request) {
+      console.error("No response received from server");
+      throw new Error("No response from server. Please check your connection.");
+    } else {
+      throw error;
+    }
   }
 };

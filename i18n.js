@@ -1,7 +1,7 @@
-import i18n from "i18next"
-import { initReactI18next } from "react-i18next"
-import * as Localization from "expo-localization"
-import AsyncStorage from "@react-native-async-storage/async-storage"
+import i18n from "i18next";
+import { initReactI18next } from "react-i18next";
+import * as Localization from "expo-localization";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // English translations
 const enTranslations = {
@@ -32,6 +32,9 @@ const enTranslations = {
     and: "and",
     ok: "OK",
     apply: "Apply",
+    allLocations: "All Locations",
+    allCommodities: "All Commodities",
+    retry: "Retry",
   },
   dashboard: {
     title: "Dashboard",
@@ -156,9 +159,11 @@ const enTranslations = {
     dataCleared: "Data Cleared",
     dataSuccessfullyCleared: "Your app data has been successfully cleared.",
     confirmResetSettings: "Confirm Reset Settings",
-    confirmResetSettingsMessage: "This will reset all settings to their default values.",
+    confirmResetSettingsMessage:
+      "This will reset all settings to their default values.",
     settingsReset: "Settings Reset",
-    settingsSuccessfullyReset: "Your settings have been successfully reset to defaults.",
+    settingsSuccessfullyReset:
+      "Your settings have been successfully reset to defaults.",
   },
   historical: {
     location: "Location",
@@ -170,7 +175,8 @@ const enTranslations = {
   realTime: {
     title: "Real Time Data",
     comingSoon: "Coming Soon",
-    description: "We're working on bringing you real-time market data. This feature will allow you to see live price updates as they happen in the market.",
+    description:
+      "We're working on bringing you real-time market data. This feature will allow you to see live price updates as they happen in the market.",
     whatToExpect: "What to Expect",
     liveUpdates: "Live price updates from markets across Pakistan",
     marketCoverage: "Comprehensive coverage of all major agricultural markets",
@@ -180,6 +186,15 @@ const enTranslations = {
     to: "To",
     location: "Location",
     period: "Period",
+    marketPrices: "Market Prices",
+    commodity: "Commodity",
+    todayPrice: "Today's Price",
+    yesterdayPrice: "Yesterday's Price",
+    change: "Change",
+    noDataAvailable: "No real-time data available",
+    noDataFound: "No data found",
+    tryDifferentFilters: "Try different filters or refresh the page",
+    lastUpdated: "Last Updated",
   },
   notifications: {
     title: "Notifications",
@@ -207,7 +222,8 @@ const enTranslations = {
     yesterday: "Yesterday",
     allCommodities: "All Commodities",
     confirmDeleteAll: "Delete All Notifications",
-    confirmDeleteAllMessage: "Are you sure you want to delete all filtered notifications?",
+    confirmDeleteAllMessage:
+      "Are you sure you want to delete all filtered notifications?",
     triggered: "Triggered",
     notTriggered: "Not Triggered",
     currentPrice: "Current Price",
@@ -226,7 +242,8 @@ const enTranslations = {
     preferredCommodity: "Preferred Commodity",
     agreeToTerms: "I agree to the",
     registrationSuccess: "Registration Successful",
-    registrationSuccessMessage: "Your account has been created successfully. You can now login with your credentials.",
+    registrationSuccessMessage:
+      "Your account has been created successfully. You can now login with your credentials.",
     registrationFailed: "Registration Failed",
     resetPassword: "Reset Password",
     forgotPasswordInstructions:
@@ -251,10 +268,14 @@ const enTranslations = {
   errors: {
     general: "Something went wrong. Please try again.",
     chartLoading: "Error loading chart. Please try again.",
-    dataFetch: "Error fetching data. Please check your connection and try again.",
+    dataFetch:
+      "Error fetching data. Please check your connection and try again.",
     invalidData: "Invalid data received. Please try again later.",
+    title: "Error",
+    apiNotAvailable: "API is not available: {{error}}",
+    dataLoadFailed: "Failed to load data: {{error}}",
   },
-}
+};
 
 // Urdu translations
 const urTranslations = {
@@ -285,6 +306,9 @@ const urTranslations = {
     and: "اور",
     ok: "ٹھیک ہے",
     apply: "لاگو کریں",
+    allLocations: "تمام مقامات",
+    allCommodities: "تمام فصلیں",
+    retry: "دوبارہ کوشش کریں",
   },
   dashboard: {
     title: "ڈیش بورڈ",
@@ -409,21 +433,25 @@ const urTranslations = {
     dataCleared: "ڈیٹا صاف ہو گیا",
     dataSuccessfullyCleared: "آپ کا ایپ ڈیٹا کامیابی سے صاف کر دیا گیا ہے۔",
     confirmResetSettings: "ترتیبات ری سیٹ کرنے کی تصدیق کریں",
-    confirmResetSettingsMessage: "یہ تمام ترتیبات کو ان کی ڈیفالٹ قیمتوں پر ری سیٹ کر دے گا۔",
+    confirmResetSettingsMessage:
+      "یہ تمام ترتیبات کو ان کی ڈیفالٹ قیمتوں پر ری سیٹ کر دے گا۔",
     settingsReset: "ترتیبات ری سیٹ",
-    settingsSuccessfullyReset: "آپ کی ترتیبات کامیابی سے ڈیفالٹ پر ری سیٹ کر دی گئی ہیں۔",
+    settingsSuccessfullyReset:
+      "آپ کی ترتیبات کامیابی سے ڈیفالٹ پر ری سیٹ کر دی گئی ہیں۔",
   },
   historical: {
     location: "موقع",
     dateRange: "تاریخ کی حد",
     from: "سے",
     to: "تک",
-    noChartDataAvailable: "منتخب پیرامیٹرز کے لیے کوئی چارٹ ڈیٹا دستیاب نہیں ہے",
+    noChartDataAvailable:
+      "منتخب پیرامیٹرز کے لیے کوئی چارٹ ڈیٹا دستیاب نہیں ہے",
   },
   realTime: {
     title: "حقیقی وقت کا ڈیٹا",
     comingSoon: "جلد آ رہا ہے",
-    description: "ہم آپ کو حقیقی وقت کے مارکیٹ ڈیٹا لانے پر کام کر رہے ہیں۔ یہ خصوصیت آپ کو مارکیٹ میں ہونے والی قیمتوں کی براہ راست اپڈیٹس دیکھنے کی اجازت دے گی۔",
+    description:
+      "ہم آپ کو حقیقی وقت کے مارکیٹ ڈیٹا لانے پر کام کر رہے ہیں۔ یہ خصوصیت آپ کو مارکیٹ میں ہونے والی قیمتوں کی براہ راست اپڈیٹس دیکھنے کی اجازت دے گی۔",
     whatToExpect: "آپ کیا توقع کر سکتے ہیں",
     liveUpdates: "پاکستان بھر کے مارکیٹوں سے براہ راست قیمت کی اپڈیٹس",
     marketCoverage: "تمام بڑے زرعی مارکیٹوں کا جامع احاطہ",
@@ -433,6 +461,15 @@ const urTranslations = {
     to: "تک",
     location: "موقع",
     period: "مدت",
+    marketPrices: "مارکیٹ قیمتیں",
+    commodity: "فصل",
+    todayPrice: "آج کی قیمت",
+    yesterdayPrice: "کل کی قیمت",
+    change: "تبدیلی",
+    noDataAvailable: "کوئی حقیقی وقت کا ڈیٹا دستیاب نہیں ہے",
+    noDataFound: "کوئی ڈیٹا نہیں ملا",
+    tryDifferentFilters: "مختلف فلٹرز آزمائیں یا صفحہ ریفریش کریں",
+    lastUpdated: "آخری اپڈیٹ",
   },
   notifications: {
     title: "نوٹیفیکیشنز",
@@ -460,7 +497,8 @@ const urTranslations = {
     yesterday: "کل",
     allCommodities: "تمام فصلیں",
     confirmDeleteAll: "تمام نوٹیفیکیشنز حذف کریں",
-    confirmDeleteAllMessage: "کیا آپ واقعی تمام فلٹر شدہ نوٹیفیکیشنز کو حذف کرنا چاہتے ہیں؟",
+    confirmDeleteAllMessage:
+      "کیا آپ واقعی تمام فلٹر شدہ نوٹیفیکیشنز کو حذف کرنا چاہتے ہیں؟",
     triggered: "متحرک",
     notTriggered: "غیر متحرک",
     currentPrice: "موجودہ قیمت",
@@ -479,7 +517,8 @@ const urTranslations = {
     preferredCommodity: "پسندیدہ فصل",
     agreeToTerms: "میں متفق ہوں",
     registrationSuccess: "رجسٹریشن کامیاب",
-    registrationSuccessMessage: "آپ کا اکاؤنٹ کامیابی سے بنایا گیا ہے۔ آپ اب اپنی تفصیلات سے لاگ ان کر سکتے ہیں۔",
+    registrationSuccessMessage:
+      "آپ کا اکاؤنٹ کامیابی سے بنایا گیا ہے۔ آپ اب اپنی تفصیلات سے لاگ ان کر سکتے ہیں۔",
     registrationFailed: "رجسٹریشن ناکام",
     resetPassword: "پاس ورڈ ری سیٹ کریں",
     forgotPasswordInstructions:
@@ -504,19 +543,23 @@ const urTranslations = {
   errors: {
     general: "کچھ غلط ہو گیا ہے۔ براہ کرم دوبارہ کوشش کریں۔",
     chartLoading: "چارٹ لوڈ کرنے میں خرابی۔ براہ کرم دوبارہ کوشش کریں۔",
-    dataFetch: "ڈیٹا حاصل کرنے میں خرابی۔ براہ کرم اپنے کنکشن کی جانچ کریں اور دوبارہ کوشش کریں۔",
+    dataFetch:
+      "ڈیٹا حاصل کرنے میں خرابی۔ براہ کرم اپنے کنکشن کی جانچ کریں اور دوبارہ کوشش کریں۔",
     invalidData: "غلط ڈیٹا موصول ہوا۔ براہ کرم بعد میں دوبارہ کوشش کریں۔",
+    title: "خرابی",
+    apiNotAvailable: "اے پی آئی دستیاب نہیں ہے: {{error}}",
+    dataLoadFailed: "ڈیٹا لوڈ کرنے میں ناکام: {{error}}",
   },
-}
+};
 
 // Initialize i18next
 const initI18n = async () => {
   // Get stored language preference
-  let storedLanguage = null
+  let storedLanguage = null;
   try {
-    storedLanguage = await AsyncStorage.getItem("language")
+    storedLanguage = await AsyncStorage.getItem("language");
   } catch (error) {
-    console.warn("Failed to get stored language:", error)
+    console.warn("Failed to get stored language:", error);
   }
 
   // Initialize i18next
@@ -534,13 +577,12 @@ const initI18n = async () => {
     react: {
       useSuspense: false, // This is important for React Native
     },
-  })
+  });
 
-  return i18n
-}
+  return i18n;
+};
 
 // Initialize i18n
-initI18n().catch(console.error)
+initI18n().catch(console.error);
 
-export default i18n
-
+export default i18n;
