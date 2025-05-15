@@ -1,5 +1,7 @@
-import { redirect } from "next/navigation";
+"use client"
 
-export default function Home() {
-  redirect("/dashboard");
+import App from "../App"
+
+export default function SyntheticV0PageForDeployment() {
+  return <App />
 }
