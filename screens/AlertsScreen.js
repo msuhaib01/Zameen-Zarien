@@ -1,6 +1,6 @@
-"use client"
+"use client";
 
-import { useState } from "react"
+import { useState } from "react";
 import {
   View,
   Text,
@@ -11,23 +11,23 @@ import {
   SafeAreaView,
   Modal,
   Switch,
-} from "react-native"
-import { useTranslation } from "react-i18next"
-import { Ionicons } from "@expo/vector-icons"
+} from "react-native";
+import { useTranslation } from "react-i18next";
+import { Ionicons } from "@expo/vector-icons";
 
-import Header from "../components/Header"
-import Card from "../components/Card"
-import Button from "../components/Button"
-import Dropdown from "../components/Dropdown"
-import Input from "../components/Input"
-import ToggleSwitch from "../components/ToggleSwitch"
-import { COLORS, FONT, SPACING } from "../theme"
+import Header from "../components/Header";
+import Card from "../components/Card";
+import Button from "../components/Button";
+import Dropdown from "../components/Dropdown";
+import Input from "../components/Input";
+import ToggleSwitch from "../components/ToggleSwitch";
+import { COLORS, FONT, SPACING } from "../theme";
 
 const fakeCommodities = [
   { id: 1, name: "Wheat", name_ur: "گندم" },
   { id: 2, name: "Rice", name_ur: "چاول" },
   { id: 3, name: "Sugar", name_ur: "چینی" },
-]
+];
 
 const fakeInitialAlerts = [
   {
@@ -48,77 +48,96 @@ const fakeInitialAlerts = [
     enabled: false,
     createdAt: "2023-01-07T14:15:00Z",
   },
-]
+];
 
 const AlertsScreen = ({ navigation }) => {
-  const { t } = useTranslation()
+  const { t } = useTranslation();
 
-  const [alerts, setAlerts] = useState(fakeInitialAlerts)
-  const [refreshing, setRefreshing] = useState(false)
-  const [showAddModal, setShowAddModal] = useState(false)
-  const [showEditModal, setShowEditModal] = useState(false)
-  const [showHistoryModal, setShowHistoryModal] = useState(false)
-  const [selectedAlert, setSelectedAlert] = useState(null)
-  const [alertHistory, setAlertHistory] = useState([])
-  const [currentPrices, setCurrentPrices] = useState({ 1: 210, 2: 135, 3: 120 })
+  const [alerts, setAlerts] = useState(fakeInitialAlerts);
+  const [refreshing, setRefreshing] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [selectedAlert, setSelectedAlert] = useState(null);
+  const [alertHistory, setAlertHistory] = useState([]);
+  const [currentPrices, setCurrentPrices] = useState({
+    1: 210,
+    2: 135,
+    3: 120,
+  });
 
-  const [formCommodity, setFormCommodity] = useState(1)
-  const [formThreshold, setFormThreshold] = useState("")
-  const [formCondition, setFormCondition] = useState("above")
+  const [formCommodity, setFormCommodity] = useState(1);
+  const [formThreshold, setFormThreshold] = useState("");
+  const [formCondition, setFormCondition] = useState("above");
   const [formNotificationMethods, setFormNotificationMethods] = useState({
     push: true,
     sms: false,
     email: false,
-  })
+  });
 
   const commodityOptions = fakeCommodities.map((commodity) => ({
     label: t("common.language") === "en" ? commodity.name : commodity.name_ur,
     value: commodity.id,
-  }))
+  }));
 
   const conditionOptions = [
     { label: t("alerts.above"), value: "above" },
     { label: t("alerts.below"), value: "below" },
-  ]
+  ];
 
   const onRefresh = async () => {
-    setRefreshing(true)
-    await new Promise((resolve) => setTimeout(resolve, 500))
-    setRefreshing(false)
-  }
+    setRefreshing(true);
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    setRefreshing(false);
+  };
 
   const openAddModal = () => {
-    setFormCommodity(1)
-    setFormThreshold("")
-    setFormCondition("above")
-    setFormNotificationMethods({ push: true, sms: false, email: false })
-    setShowAddModal(true)
-  }
+    setFormCommodity(1);
+    setFormThreshold("");
+    setFormCondition("above");
+    setFormNotificationMethods({ push: true, sms: false, email: false });
+    setShowAddModal(true);
+  };
 
   const openEditModal = (alert) => {
-    setSelectedAlert(alert)
-    setFormCommodity(alert.commodityId)
-    setFormThreshold(alert.threshold.toString())
-    setFormCondition(alert.condition)
-    setFormNotificationMethods(alert.notificationMethods)
-    setShowEditModal(true)
-  }
+    setSelectedAlert(alert);
+    setFormCommodity(alert.commodityId);
+    setFormThreshold(alert.threshold.toString());
+    setFormCondition(alert.condition);
+    setFormNotificationMethods(alert.notificationMethods);
+    setShowEditModal(true);
+  };
 
   const openHistoryModal = (alert) => {
-    setSelectedAlert(alert)
+    setSelectedAlert(alert);
     const mockHistory = [
-      { id: "1", date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), price: Number.parseInt(alert.threshold) + 5, triggered: true },
-      { id: "2", date: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(), price: Number.parseInt(alert.threshold) - 2, triggered: false },
-      { id: "3", date: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(), price: Number.parseInt(alert.threshold) + 10, triggered: true },
-    ]
-    setAlertHistory(mockHistory)
-    setShowHistoryModal(true)
-  }
+      {
+        id: "1",
+        date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+        price: Number.parseInt(alert.threshold) + 5,
+        triggered: true,
+      },
+      {
+        id: "2",
+        date: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+        price: Number.parseInt(alert.threshold) - 2,
+        triggered: false,
+      },
+      {
+        id: "3",
+        date: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+        price: Number.parseInt(alert.threshold) + 10,
+        triggered: true,
+      },
+    ];
+    setAlertHistory(mockHistory);
+    setShowHistoryModal(true);
+  };
 
   const handleAddAlert = () => {
     if (!formThreshold) {
-      alert(t("validation.enterThreshold"))
-      return
+      alert(t("validation.enterThreshold"));
+      return;
     }
     const newAlert = {
       id: Date.now().toString(),
@@ -128,51 +147,62 @@ const AlertsScreen = ({ navigation }) => {
       notificationMethods: formNotificationMethods,
       enabled: true,
       createdAt: new Date().toISOString(),
-    }
-    setAlerts((prev) => [...prev, newAlert])
-    setShowAddModal(false)
-  }
+    };
+    setAlerts((prev) => [...prev, newAlert]);
+    setShowAddModal(false);
+  };
 
   const handleEditAlert = () => {
     if (!formThreshold) {
-      alert(t("validation.enterThreshold"))
-      return
+      alert(t("validation.enterThreshold"));
+      return;
     }
-    setAlerts((prev) => prev.map((a) => a.id === selectedAlert.id ? {
-      ...a,
-      commodityId: formCommodity,
-      threshold: Number.parseInt(formThreshold),
-      condition: formCondition,
-      notificationMethods: formNotificationMethods,
-    } : a))
-    setShowEditModal(false)
-  }
+    setAlerts((prev) =>
+      prev.map((a) =>
+        a.id === selectedAlert.id
+          ? {
+              ...a,
+              commodityId: formCommodity,
+              threshold: Number.parseInt(formThreshold),
+              condition: formCondition,
+              notificationMethods: formNotificationMethods,
+            }
+          : a
+      )
+    );
+    setShowEditModal(false);
+  };
 
   const handleDeleteAlert = (alertId) => {
-    setAlerts((prev) => prev.filter((a) => a.id !== alertId))
-  }
+    setAlerts((prev) => prev.filter((a) => a.id !== alertId));
+  };
 
   const toggleAlertEnabled = (alertId, currentStatus) => {
-    setAlerts((prev) => prev.map((a) => a.id === alertId ? { ...a, enabled: !a.enabled } : a))
-  }
+    setAlerts((prev) =>
+      prev.map((a) => (a.id === alertId ? { ...a, enabled: !a.enabled } : a))
+    );
+  };
 
   const toggleNotificationMethod = (method) => {
-    setFormNotificationMethods((prev) => ({ ...prev, [method]: !prev[method] }))
-  }
+    setFormNotificationMethods((prev) => ({
+      ...prev,
+      [method]: !prev[method],
+    }));
+  };
 
   const formatDate = (dateString) => {
-    const date = new Date(dateString)
-    return `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`
-  }
+    const date = new Date(dateString);
+    return `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
+  };
 
   const getCommodityName = (commodityId) => {
-    const commodity = fakeCommodities.find((c) => c.id === commodityId)
-    return t("common.language") === "en" ? commodity?.name : commodity?.name_ur
-  }
+    const commodity = fakeCommodities.find((c) => c.id === commodityId);
+    return t("common.language") === "en" ? commodity?.name : commodity?.name_ur;
+  };
 
   const getCurrentPrice = (commodityId) => {
-    return currentPrices[commodityId] || "-"
-  }
+    return currentPrices[commodityId] || "-";
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -181,13 +211,22 @@ const AlertsScreen = ({ navigation }) => {
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
       >
         <Button
           title={t("alerts.addAlert")}
           onPress={openAddModal}
           type="primary"
-          icon={<Ionicons name="add-circle-outline" size={18} color={COLORS.white} style={styles.buttonIcon} />}
+          icon={
+            <Ionicons
+              name="add-circle-outline"
+              size={18}
+              color={COLORS.white}
+              style={styles.buttonIcon}
+            />
+          }
           style={styles.addButton}
         />
 
@@ -196,53 +235,105 @@ const AlertsScreen = ({ navigation }) => {
             {alerts.map((alert) => (
               <Card key={alert.id} style={styles.alertCard}>
                 <View style={styles.alertHeader}>
-                  <Text style={styles.alertTitle}>{getCommodityName(alert.commodityId)}</Text>
+                  <Text style={styles.alertTitle}>
+                    {getCommodityName(alert.commodityId)}
+                  </Text>
                   <View style={styles.alertActions}>
-                    <TouchableOpacity style={styles.alertAction} onPress={() => openHistoryModal(alert)}>
-                      <Ionicons name="time-outline" size={20} color={COLORS.primary} />
+                    <TouchableOpacity
+                      style={styles.alertAction}
+                      onPress={() => openHistoryModal(alert)}
+                    >
+                      <Ionicons
+                        name="time-outline"
+                        size={20}
+                        color={COLORS.primary}
+                      />
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.alertAction} onPress={() => openEditModal(alert)}>
-                      <Ionicons name="create-outline" size={20} color={COLORS.primary} />
+                    <TouchableOpacity
+                      style={styles.alertAction}
+                      onPress={() => openEditModal(alert)}
+                    >
+                      <Ionicons
+                        name="create-outline"
+                        size={20}
+                        color={COLORS.primary}
+                      />
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.alertAction} onPress={() => handleDeleteAlert(alert.id)}>
-                      <Ionicons name="trash-outline" size={20} color={COLORS.accent} />
+                    <TouchableOpacity
+                      style={styles.alertAction}
+                      onPress={() => handleDeleteAlert(alert.id)}
+                    >
+                      <Ionicons
+                        name="trash-outline"
+                        size={20}
+                        color={COLORS.accent}
+                      />
                     </TouchableOpacity>
                   </View>
                 </View>
 
                 <View style={styles.alertContent}>
                   <View style={styles.alertInfo}>
-                    <Text style={styles.alertInfoLabel}>{t("alerts.condition")}:</Text>
+                    <Text style={styles.alertInfoLabel}>
+                      {t("alerts.condition")}:
+                    </Text>
                     <Text style={styles.alertInfoValue}>
-                      {alert.condition === "above" ? t("alerts.above") : t("alerts.below")} PKR {alert.threshold}
+                      {alert.condition === "above"
+                        ? t("alerts.above")
+                        : t("alerts.below")}{" "}
+                      PKR {alert.threshold}
                     </Text>
                   </View>
 
                   <View style={styles.alertInfo}>
-                    <Text style={styles.alertInfoLabel}>{t("alerts.currentPrice")}:</Text>
-                    <Text style={styles.alertInfoValue}>PKR {getCurrentPrice(alert.commodityId)}</Text>
+                    <Text style={styles.alertInfoLabel}>
+                      {t("alerts.currentPrice")}:
+                    </Text>
+                    <Text style={styles.alertInfoValue}>
+                      PKR {getCurrentPrice(alert.commodityId)}
+                    </Text>
                   </View>
 
                   <View style={styles.alertInfo}>
-                    <Text style={styles.alertInfoLabel}>{t("alerts.notificationMethods")}:</Text>
+                    <Text style={styles.alertInfoLabel}>
+                      {t("alerts.notificationMethods")}:
+                    </Text>
                     <View style={styles.notificationMethodsWrapper}>
                       <View style={styles.notificationMethodsContainer}>
                         {alert.notificationMethods.push && (
                           <View style={styles.notificationMethod}>
-                            <Ionicons name="notifications" size={16} color={COLORS.primary} />
-                            <Text style={styles.notificationMethodText}>{t("alerts.push")}</Text>
+                            <Ionicons
+                              name="notifications"
+                              size={16}
+                              color={COLORS.primary}
+                            />
+                            <Text style={styles.notificationMethodText}>
+                              {t("alerts.push")}
+                            </Text>
                           </View>
                         )}
                         {alert.notificationMethods.sms && (
                           <View style={styles.notificationMethod}>
-                            <Ionicons name="chatbubble" size={16} color={COLORS.primary} />
-                            <Text style={styles.notificationMethodText}>{t("alerts.sms")}</Text>
+                            <Ionicons
+                              name="chatbubble"
+                              size={16}
+                              color={COLORS.primary}
+                            />
+                            <Text style={styles.notificationMethodText}>
+                              {t("alerts.sms")}
+                            </Text>
                           </View>
                         )}
                         {alert.notificationMethods.email && (
                           <View style={styles.notificationMethod}>
-                            <Ionicons name="mail" size={16} color={COLORS.primary} />
-                            <Text style={styles.notificationMethodText}>{t("alerts.email")}</Text>
+                            <Ionicons
+                              name="mail"
+                              size={16}
+                              color={COLORS.primary}
+                            />
+                            <Text style={styles.notificationMethodText}>
+                              {t("alerts.email")}
+                            </Text>
                           </View>
                         )}
                       </View>
@@ -251,11 +342,18 @@ const AlertsScreen = ({ navigation }) => {
                 </View>
 
                 <View style={styles.alertFooter}>
-                  <Text style={styles.alertStatus}>{alert.enabled ? t("alerts.enabled") : t("alerts.disabled")}</Text>
+                  <Text style={styles.alertStatus}>
+                    {alert.enabled ? t("alerts.enabled") : t("alerts.disabled")}
+                  </Text>
                   <Switch
                     value={alert.enabled}
-                    onValueChange={() => toggleAlertEnabled(alert.id, alert.enabled)}
-                    trackColor={{ false: COLORS.lightGray, true: COLORS.primary }}
+                    onValueChange={() =>
+                      toggleAlertEnabled(alert.id, alert.enabled)
+                    }
+                    trackColor={{
+                      false: COLORS.lightGray,
+                      true: COLORS.primary,
+                    }}
                     thumbColor={COLORS.white}
                   />
                 </View>
@@ -264,9 +362,15 @@ const AlertsScreen = ({ navigation }) => {
           </View>
         ) : (
           <View style={styles.emptyContainer}>
-            <Ionicons name="notifications-off-outline" size={64} color={COLORS.gray} />
+            <Ionicons
+              name="notifications-off-outline"
+              size={64}
+              color={COLORS.gray}
+            />
             <Text style={styles.emptyText}>{t("alerts.noAlerts")}</Text>
-            <Text style={styles.emptySubtext}>{t("alerts.addAlertPrompt")}</Text>
+            <Text style={styles.emptySubtext}>
+              {t("alerts.addAlertPrompt")}
+            </Text>
           </View>
         )}
       </ScrollView>
@@ -304,7 +408,9 @@ const AlertsScreen = ({ navigation }) => {
                 keyboardType="numeric"
               />
 
-              <Text style={styles.notificationMethodsLabel}>{t("alerts.notificationMethod")}</Text>
+              <Text style={styles.notificationMethodsLabel}>
+                {t("alerts.notificationMethod")}
+              </Text>
 
               <View style={styles.notificationMethodsForm}>
                 <ToggleSwitch
@@ -334,7 +440,12 @@ const AlertsScreen = ({ navigation }) => {
                 type="outline"
                 style={styles.modalButton}
               />
-              <Button title={t("common.save")} onPress={handleAddAlert} type="primary" style={styles.modalButton} />
+              <Button
+                title={t("common.save")}
+                onPress={handleAddAlert}
+                type="primary"
+                style={styles.modalButton}
+              />
             </View>
           </View>
         </View>
@@ -373,7 +484,9 @@ const AlertsScreen = ({ navigation }) => {
                 keyboardType="numeric"
               />
 
-              <Text style={styles.notificationMethodsLabel}>{t("alerts.notificationMethod")}</Text>
+              <Text style={styles.notificationMethodsLabel}>
+                {t("alerts.notificationMethod")}
+              </Text>
 
               <View style={styles.notificationMethodsForm}>
                 <ToggleSwitch
@@ -403,7 +516,12 @@ const AlertsScreen = ({ navigation }) => {
                 type="outline"
                 style={styles.modalButton}
               />
-              <Button title={t("common.save")} onPress={handleEditAlert} type="primary" style={styles.modalButton} />
+              <Button
+                title={t("common.save")}
+                onPress={handleEditAlert}
+                type="primary"
+                style={styles.modalButton}
+              />
             </View>
           </View>
         </View>
@@ -424,23 +542,33 @@ const AlertsScreen = ({ navigation }) => {
                 alertHistory.map((item) => (
                   <View key={item.id} style={styles.historyItem}>
                     <View style={styles.historyItemHeader}>
-                      <Text style={styles.historyItemDate}>{formatDate(item.date)}</Text>
+                      <Text style={styles.historyItemDate}>
+                        {formatDate(item.date)}
+                      </Text>
                       <View
                         style={[
                           styles.historyItemStatus,
-                          item.triggered ? styles.historyItemTriggered : styles.historyItemNotTriggered,
+                          item.triggered
+                            ? styles.historyItemTriggered
+                            : styles.historyItemNotTriggered,
                         ]}
                       >
                         <Text style={styles.historyItemStatusText}>
-                          {item.triggered ? t("alerts.triggered") : t("alerts.notTriggered")}
+                          {item.triggered
+                            ? t("alerts.triggered")
+                            : t("alerts.notTriggered")}
                         </Text>
                       </View>
                     </View>
-                    <Text style={styles.historyItemPrice}>PKR {item.price}</Text>
+                    <Text style={styles.historyItemPrice}>
+                      PKR {item.price}
+                    </Text>
                   </View>
                 ))
               ) : (
-                <Text style={styles.emptyHistoryText}>{t("alerts.noHistory")}</Text>
+                <Text style={styles.emptyHistoryText}>
+                  {t("alerts.noHistory")}
+                </Text>
               )}
             </ScrollView>
 
@@ -456,8 +584,8 @@ const AlertsScreen = ({ navigation }) => {
         </View>
       </Modal>
     </SafeAreaView>
-  )
-}
+  );
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -661,7 +789,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
     padding: SPACING.large,
   },
-})
+});
 
-export default AlertsScreen
-
+export default AlertsScreen;
