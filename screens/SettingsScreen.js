@@ -18,6 +18,7 @@ import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import Header from "../components/Header";
+import WebLayout from "../components/WebLayout";
 import Card from "../components/Card";
 import Button from "../components/Button";
 import Dropdown from "../components/Dropdown";
@@ -143,7 +144,193 @@ const SettingsScreen = ({ navigation }) => {
     );
   };
 
-  return (
+  const [isWebPlatform] = useState(Platform.OS === "web");
+
+  // Render content function for reuse between web and mobile
+  const renderContent = () => (
+    <>
+      {/* User Profile Section */}
+      <Card style={styles.profileCard}>
+        <View style={styles.profileHeader}>
+          <View style={styles.profileImageContainer}>
+            <Image
+              source={require("../assets/logo-placeholder.png")}
+              style={styles.profileImage}
+              resizeMode="cover"
+            />
+          </View>
+          <View style={styles.profileInfo}>
+            <Text style={styles.profileName}>
+              {user?.full_name || "Not set"}
+            </Text>
+            <Text style={styles.profilePhone}>
+              {user?.phone_number || "Not set"}
+            </Text>
+            <Text style={styles.profileEmail}>
+              {user?.email || "Not set"}
+            </Text>
+          </View>
+        </View>
+
+        <TouchableOpacity
+          style={styles.editProfileButton}
+          onPress={() => navigation.navigate("EditProfile")}
+        >
+          <Ionicons name="create-outline" size={18} color={COLORS.primary} />
+          <Text style={styles.editProfileText}>Edit Profile</Text>
+        </TouchableOpacity>
+      </Card>
+
+      {/* App Settings Section */}
+      <Text style={styles.sectionTitle}>{t("settings.appSettings")}</Text>
+
+      <Card style={styles.settingsCard}>
+        <View style={styles.settingItem}>
+          <Text style={styles.settingLabel}>{t("settings.language")}</Text>
+          <Dropdown
+            data={languageOptions}
+            value={language}
+            onSelect={changeLanguage}
+            style={styles.settingDropdown}
+          />
+        </View>
+
+        <View style={styles.settingItem}>
+          <Text style={styles.settingLabel}>
+            {t("settings.defaultCommodity")}
+          </Text>
+          <Dropdown
+            data={commodityOptions}
+            value={selectedCommodity}
+            onSelect={setSelectedCommodity}
+            style={styles.settingDropdown}
+          />
+        </View>
+
+        <View style={styles.settingItem}>
+          <Text style={styles.settingLabel}>{t("settings.defaultView")}</Text>
+          <Dropdown
+            data={defaultViewOptions}
+            value={defaultView}
+            onSelect={setDefaultView}
+            style={styles.settingDropdown}
+          />
+        </View>
+      </Card>
+
+      {/* Notification Settings Section */}
+      <Text style={styles.sectionTitle}>
+        {t("settings.notificationSettings")}
+      </Text>
+
+      <Card style={styles.settingsCard}>
+        <ToggleSwitch
+          label={t("notifications.doNotDisturb")}
+          value={doNotDisturb}
+          onValueChange={toggleDoNotDisturb}
+          style={styles.toggleItem}
+        />
+
+        <ToggleSwitch
+          label={t("settings.notificationSound")}
+          value={notificationSound}
+          onValueChange={setNotificationSound}
+          style={styles.toggleItem}
+        />
+
+        <ToggleSwitch
+          label={t("settings.vibration")}
+          value={vibration}
+          onValueChange={setVibration}
+          style={styles.toggleItem}
+        />
+      </Card>
+
+      {/* Account Actions Section */}
+      <Text style={styles.sectionTitle}>{t("settings.accountActions")}</Text>
+
+      <Card style={styles.actionsCard}>
+        <TouchableOpacity
+          style={styles.actionButtonContainer}
+          onPress={handleResetSettings}
+          activeOpacity={0.7}
+        >
+          <Ionicons
+            name="refresh-outline"
+            size={22}
+            color={COLORS.primary}
+            style={styles.actionIcon}
+          />
+          <Text style={styles.actionButtonText}>
+            {t("settings.resetSettings")}
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.actionButtonContainer}
+          onPress={handleClearData}
+          activeOpacity={0.7}
+        >
+          <Ionicons
+            name="trash-outline"
+            size={22}
+            color={COLORS.primary}
+            style={styles.actionIcon}
+          />
+          <Text style={styles.actionButtonText}>
+            {t("settings.clearData")}
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.logoutButtonContainer}
+          onPress={handleLogout}
+          activeOpacity={0.7}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
+          <Ionicons
+            name="log-out-outline"
+            size={22}
+            color={COLORS.white}
+            style={styles.actionIcon}
+          />
+          <Text style={styles.logoutButtonText}>{t("settings.logout")}</Text>
+        </TouchableOpacity>
+      </Card>
+
+      {/* Version Section */}
+      <Card style={styles.versionCard}>
+        <Text style={styles.versionText}>Version 1.0.0</Text>
+
+        <View style={styles.linksContainer}>
+          <TouchableOpacity style={styles.linkButton}>
+            <Text style={styles.linkText}>
+              {t("common.termsAndConditions")}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.linkButton}>
+            <Text style={styles.linkText}>{t("common.privacyPolicy")}</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.linkButton}>
+            <Text style={styles.linkText}>{t("common.contactSupport")}</Text>
+          </TouchableOpacity>
+        </View>
+      </Card>
+    </>
+  );
+
+  // Return different layouts based on platform
+  return isWebPlatform ? (
+    <WebLayout
+      title={t("settings.title")}
+      currentScreen="Settings"
+      navigation={navigation}
+    >
+      {renderContent()}
+    </WebLayout>
+  ) : (
     <SafeAreaView style={styles.container}>
       <StatusBar backgroundColor={COLORS.primary} barStyle="light-content" />
       <Header title={t("settings.title")} showBackButton={false} />

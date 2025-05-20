@@ -11,26 +11,31 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   Dimensions,
+  Platform,
+  useWindowDimensions,
 } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 
 import Header from "../components/Header";
+import WebLayout from "../components/WebLayout";
 import Card from "../components/Card";
 import Dropdown from "../components/Dropdown";
 import Button from "../components/Button";
-import { COLORS, FONT, SPACING } from "../theme";
+import FilterSection from "../components/FilterSection";
+import GridContainer from "../components/GridContainer";
+import { COLORS, FONT, SPACING, SHADOWS } from "../theme";
 import { useApp } from "../context/AppContext";
 import {
   getRealTimeData,
   checkApiAvailability,
 } from "../services/cropPricesService";
 
-const screenWidth = Dimensions.get("window").width;
-
 const RealTimeScreen = ({ navigation }) => {
   const { t } = useTranslation();
   const { commodities, locations } = useApp();
+  const windowDimensions = useWindowDimensions();
+  const [isWebPlatform] = useState(Platform.OS === "web");
   const [refreshing, setRefreshing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isApiAvailable, setIsApiAvailable] = useState(true);
@@ -157,7 +162,133 @@ const RealTimeScreen = ({ navigation }) => {
 
   const filteredData = getFilteredData();
 
-  return (
+  // Render content for both web and mobile
+  const renderContent = () => (
+    <>
+      {/* Filters */}
+      <FilterSection
+        commodityOptions={commodityOptions}
+        locationOptions={locationOptions}
+        selectedCommodity={selectedCommodity}
+        selectedLocation={selectedLocation}
+        onSelectCommodity={setSelectedCommodity}
+        onSelectLocation={setSelectedLocation}
+        commodityLabel={t("dashboard.commodity")}
+        locationLabel={t("realTime.location")}
+        style={styles.filtersCard}
+      />
+
+      {/* Loading indicator */}
+      {isLoading ? (
+        <Card style={styles.loadingCard} shadow="medium">
+          <ActivityIndicator size="large" color={COLORS.primary} />
+          <Text style={styles.loadingText}>{t("common.loading")}</Text>
+        </Card>
+      ) : error ? (
+        // Error message
+        <Card style={styles.errorCard} shadow="medium">
+          <Ionicons
+            name="alert-circle-outline"
+            size={64}
+            color={COLORS.error}
+            style={styles.errorIcon}
+          />
+          <Text style={styles.errorTitle}>{t("errors.title")}</Text>
+          <Text style={styles.errorText}>{error}</Text>
+          <Button
+            title={t("common.retry")}
+            onPress={checkApiAndLoadData}
+            style={styles.retryButton}
+          />
+        </Card>
+      ) : filteredData.length === 0 ? (
+        // No data message
+        <Card style={styles.noDataCard} shadow="medium">
+          <Ionicons
+            name="search-outline"
+            size={64}
+            color={COLORS.gray}
+            style={styles.noDataIcon}
+          />
+          <Text style={styles.noDataTitle}>{t("realTime.noDataFound")}</Text>
+          <Text style={styles.noDataText}>
+            {t("realTime.tryDifferentFilters")}
+          </Text>
+        </Card>
+      ) : (
+        // Real-time data table
+        <Card style={styles.tableCard} shadow="medium">
+          <Text style={styles.tableTitle}>{t("realTime.marketPrices")}</Text>
+
+          {/* Table header */}
+          <View style={styles.tableHeader}>
+            <Text style={[styles.tableHeaderCell, styles.locationCell]}>
+              {t("realTime.location")}
+            </Text>
+            <Text style={[styles.tableHeaderCell, styles.commodityCell]}>
+              {t("realTime.commodity")}
+            </Text>
+            <Text style={[styles.tableHeaderCell, styles.priceCell]}>
+              {t("realTime.todayPrice")}
+            </Text>
+            <Text style={[styles.tableHeaderCell, styles.priceCell]}>
+              {t("realTime.yesterdayPrice")}
+            </Text>
+            <Text style={[styles.tableHeaderCell, styles.changeCell]}>
+              {t("realTime.change")}
+            </Text>
+          </View>
+
+          {/* Table body */}
+          <ScrollView style={styles.tableBody}>
+            {filteredData.map((item, index) => (
+              <View key={index} style={styles.tableRow}>
+                <Text
+                  style={[styles.tableCell, styles.locationCell]}
+                  numberOfLines={1}
+                >
+                  {item.CityName}
+                </Text>
+                <Text
+                  style={[styles.tableCell, styles.commodityCell]}
+                  numberOfLines={1}
+                >
+                  {item.CropName}
+                </Text>
+                <Text style={[styles.tableCell, styles.priceCell]}>
+                  {item["Today's FQP/Average Price"]}
+                </Text>
+                <Text style={[styles.tableCell, styles.priceCell]}>
+                  {item["Yesterday's FQP/Average Price"]}
+                </Text>
+                <Text
+                  style={[
+                    styles.tableCell,
+                    styles.changeCell,
+                    getPriceChangeClass(item["Change in Price"]),
+                  ]}
+                >
+                  {item["Change in Price"]}
+                </Text>
+              </View>
+            ))}
+          </ScrollView>
+        </Card>
+      )}
+    </>
+  );
+
+  // Return different layouts based on platform
+  return isWebPlatform ? (
+    <WebLayout
+      title={t("realTime.title")}
+      currentScreen="RealTime"
+      navigation={navigation}
+      fullWidth={true}
+    >
+      {renderContent()}
+    </WebLayout>
+  ) : (
     <SafeAreaView style={styles.container}>
       <Header title={t("realTime.title")} showBackButton={true} />
 
@@ -169,122 +300,7 @@ const RealTimeScreen = ({ navigation }) => {
         }
         showsVerticalScrollIndicator={false}
       >
-        {/* Filters */}
-        <View style={styles.filtersContainer}>
-          <Dropdown
-            label={t("realTime.location")}
-            data={locationOptions}
-            value={selectedLocation}
-            onSelect={setSelectedLocation}
-            style={styles.dropdown}
-          />
-
-          <Dropdown
-            label={t("dashboard.commodity")}
-            data={commodityOptions}
-            value={selectedCommodity}
-            onSelect={setSelectedCommodity}
-            style={styles.dropdown}
-          />
-        </View>
-
-        {/* Loading indicator */}
-        {isLoading ? (
-          <Card style={styles.loadingCard}>
-            <ActivityIndicator size="large" color={COLORS.primary} />
-            <Text style={styles.loadingText}>{t("common.loading")}</Text>
-          </Card>
-        ) : error ? (
-          // Error message
-          <Card style={styles.errorCard}>
-            <Ionicons
-              name="alert-circle-outline"
-              size={64}
-              color={COLORS.error}
-              style={styles.errorIcon}
-            />
-            <Text style={styles.errorTitle}>{t("errors.title")}</Text>
-            <Text style={styles.errorText}>{error}</Text>
-            <Button
-              title={t("common.retry")}
-              onPress={checkApiAndLoadData}
-              style={styles.retryButton}
-            />
-          </Card>
-        ) : filteredData.length === 0 ? (
-          // No data message
-          <Card style={styles.noDataCard}>
-            <Ionicons
-              name="search-outline"
-              size={64}
-              color={COLORS.gray}
-              style={styles.noDataIcon}
-            />
-            <Text style={styles.noDataTitle}>{t("realTime.noDataFound")}</Text>
-            <Text style={styles.noDataText}>
-              {t("realTime.tryDifferentFilters")}
-            </Text>
-          </Card>
-        ) : (
-          // Real-time data table
-          <Card style={styles.tableCard}>
-            <Text style={styles.tableTitle}>{t("realTime.marketPrices")}</Text>
-
-            {/* Table header */}
-            <View style={styles.tableHeader}>
-              <Text style={[styles.tableHeaderCell, styles.locationCell]}>
-                {t("realTime.location")}
-              </Text>
-              <Text style={[styles.tableHeaderCell, styles.commodityCell]}>
-                {t("realTime.commodity")}
-              </Text>
-              <Text style={[styles.tableHeaderCell, styles.priceCell]}>
-                {t("realTime.todayPrice")}
-              </Text>
-              <Text style={[styles.tableHeaderCell, styles.priceCell]}>
-                {t("realTime.yesterdayPrice")}
-              </Text>
-              <Text style={[styles.tableHeaderCell, styles.changeCell]}>
-                {t("realTime.change")}
-              </Text>
-            </View>
-
-            {/* Table body */}
-            <ScrollView style={styles.tableBody}>
-              {filteredData.map((item, index) => (
-                <View key={index} style={styles.tableRow}>
-                  <Text
-                    style={[styles.tableCell, styles.locationCell]}
-                    numberOfLines={1}
-                  >
-                    {item.CityName}
-                  </Text>
-                  <Text
-                    style={[styles.tableCell, styles.commodityCell]}
-                    numberOfLines={1}
-                  >
-                    {item.CropName}
-                  </Text>
-                  <Text style={[styles.tableCell, styles.priceCell]}>
-                    {item["Today's FQP/Average Price"]}
-                  </Text>
-                  <Text style={[styles.tableCell, styles.priceCell]}>
-                    {item["Yesterday's FQP/Average Price"]}
-                  </Text>
-                  <Text
-                    style={[
-                      styles.tableCell,
-                      styles.changeCell,
-                      getPriceChangeClass(item["Change in Price"]),
-                    ]}
-                  >
-                    {item["Change in Price"]}
-                  </Text>
-                </View>
-              ))}
-            </ScrollView>
-          </Card>
-        )}
+        {renderContent()}
       </ScrollView>
     </SafeAreaView>
   );
@@ -293,7 +309,7 @@ const RealTimeScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background.primary,
+    backgroundColor: Platform.OS === "web" ? COLORS.background.green : COLORS.background.primary,
   },
   scrollView: {
     flex: 1,
@@ -303,10 +319,32 @@ const styles = StyleSheet.create({
     paddingBottom: SPACING.xxl,
   },
   // Filters
+  filtersCard: {
+    marginBottom: SPACING.medium,
+    borderRadius: 16,
+  },
+  filtersTitle: {
+    fontSize: FONT.sizes.medium,
+    fontWeight: "bold",
+    marginBottom: SPACING.medium,
+    color: COLORS.text.primary,
+  },
   filtersContainer: {
-    flexDirection: "row",
+    flexDirection: Platform.OS === "web" ? "row" : "column",
+    flexWrap: "wrap",
     justifyContent: "space-between",
-    marginBottom: SPACING.large,
+  },
+  filterItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: SPACING.medium,
+    ...(Platform.OS === "web" ? {
+      width: "48%",
+    } : {}),
+  },
+  filterIcon: {
+    marginRight: SPACING.small,
+    marginTop: SPACING.medium,
   },
   dropdown: {
     flex: 1,
@@ -317,6 +355,7 @@ const styles = StyleSheet.create({
     padding: SPACING.xl,
     alignItems: "center",
     justifyContent: "center",
+    borderRadius: 16,
   },
   loadingText: {
     fontSize: FONT.sizes.medium,
@@ -328,6 +367,8 @@ const styles = StyleSheet.create({
     padding: SPACING.xl,
     alignItems: "center",
     justifyContent: "center",
+    borderRadius: 16,
+    backgroundColor: 'rgba(211, 47, 47, 0.05)',
   },
   errorIcon: {
     marginBottom: SPACING.medium,
@@ -353,6 +394,8 @@ const styles = StyleSheet.create({
     padding: SPACING.xl,
     alignItems: "center",
     justifyContent: "center",
+    borderRadius: 16,
+    backgroundColor: 'rgba(33, 150, 243, 0.05)',
   },
   noDataIcon: {
     marginBottom: SPACING.medium,
@@ -372,6 +415,8 @@ const styles = StyleSheet.create({
   // Table styles
   tableCard: {
     padding: SPACING.medium,
+    borderRadius: 16,
+    overflow: 'hidden',
   },
   tableTitle: {
     fontSize: FONT.sizes.large,
@@ -381,10 +426,10 @@ const styles = StyleSheet.create({
   },
   tableHeader: {
     flexDirection: "row",
-    backgroundColor: COLORS.background.tertiary,
+    backgroundColor: 'rgba(46, 125, 50, 0.1)',
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-    paddingVertical: SPACING.small,
+    borderBottomColor: 'rgba(46, 125, 50, 0.2)',
+    paddingVertical: SPACING.medium,
   },
   tableHeaderCell: {
     fontWeight: "bold",
@@ -400,7 +445,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
-    paddingVertical: SPACING.small,
+    paddingVertical: SPACING.medium,
+    backgroundColor: COLORS.white,
   },
   tableCell: {
     fontSize: FONT.sizes.small,
@@ -423,15 +469,24 @@ const styles = StyleSheet.create({
   },
   // Price change colors
   positive: {
-    color: COLORS.success,
+    color: COLORS.chart.green,
     fontWeight: "bold",
+    backgroundColor: 'rgba(76, 175, 80, 0.1)',
+    borderRadius: 4,
+    paddingHorizontal: 4,
   },
   negative: {
-    color: COLORS.error,
+    color: COLORS.chart.red,
     fontWeight: "bold",
+    backgroundColor: 'rgba(244, 67, 54, 0.1)',
+    borderRadius: 4,
+    paddingHorizontal: 4,
   },
   neutral: {
     color: COLORS.text.primary,
+    backgroundColor: 'rgba(0, 0, 0, 0.05)',
+    borderRadius: 4,
+    paddingHorizontal: 4,
   },
   // Legacy styles for placeholder (can be removed later)
   placeholderCard: {

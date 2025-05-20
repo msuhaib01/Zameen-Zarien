@@ -3,6 +3,7 @@ import { createStackNavigator } from "@react-navigation/stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
+import { Platform } from "react-native";
 
 // Screens
 import LoginScreen from "../screens/LoginScreen";
@@ -44,8 +45,8 @@ const AuthNavigator = () => (
   </Stack.Navigator>
 );
 
-// Main Tab Navigator
-const TabNavigator = () => {
+// Mobile Tab Navigator (only for mobile platforms)
+const MobileTabNavigator = () => {
   const { t } = useTranslation();
 
   return (
@@ -108,9 +109,24 @@ const TabNavigator = () => {
   );
 };
 
+// Web Navigator (stack-based navigation for web platform)
+const WebNavigator = () => {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="Dashboard" component={DashboardScreen} />
+      <Stack.Screen name="Forecast" component={ForecastScreen} />
+      <Stack.Screen name="Alerts" component={AlertsScreen} />
+      <Stack.Screen name="RealTime" component={RealTimeScreen} />
+      <Stack.Screen name="Settings" component={SettingsScreen} />
+      <Stack.Screen name="Notifications" component={NotificationsScreen} />
+    </Stack.Navigator>
+  );
+};
+
 // Main Navigator
 const AppNavigator = () => {
   const { user, isLoading } = useApp();
+  const isWebPlatform = Platform.OS === "web";
 
   if (isLoading) {
     // You could return a splash screen here
@@ -122,11 +138,19 @@ const AppNavigator = () => {
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {user ? (
           <>
-            <Stack.Screen name="Main" component={TabNavigator} />
-            <Stack.Screen
-              name="Notifications"
-              component={NotificationsScreen}
-            />
+            {isWebPlatform ? (
+              // Use WebNavigator for web platform
+              <Stack.Screen name="Main" component={WebNavigator} />
+            ) : (
+              // Use MobileTabNavigator for mobile platforms
+              <>
+                <Stack.Screen name="Main" component={MobileTabNavigator} />
+                <Stack.Screen
+                  name="Notifications"
+                  component={NotificationsScreen}
+                />
+              </>
+            )}
           </>
         ) : (
           <Stack.Screen name="Auth" component={AuthNavigator} />

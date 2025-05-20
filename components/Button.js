@@ -24,6 +24,12 @@ const Button = ({
         return styles.dangerButton
       case "success":
         return styles.successButton
+      case "earth":
+        return styles.earthButton
+      case "lightGreen":
+        return styles.lightGreenButton
+      case "gradient":
+        return styles.gradientButton
       default:
         return styles.primaryButton
     }
@@ -41,6 +47,12 @@ const Button = ({
         return styles.dangerText
       case "success":
         return styles.successText
+      case "earth":
+        return styles.earthText
+      case "lightGreen":
+        return styles.lightGreenText
+      case "gradient":
+        return styles.gradientText
       default:
         return styles.primaryText
     }
@@ -80,22 +92,22 @@ const Button = ({
       activeOpacity={0.7}
     >
       {loading ? (
-        <ActivityIndicator 
-          color={type === "outline" ? COLORS.primary : COLORS.white} 
-          size={size === "small" ? "small" : "small"} 
+        <ActivityIndicator
+          color={type === "outline" ? COLORS.primary : COLORS.white}
+          size={size === "small" ? "small" : "small"}
         />
       ) : (
         <View style={styles.buttonContent}>
           {icon && <View style={styles.iconContainer}>{icon}</View>}
-          <Text 
+          <Text
             style={[
-              styles.text, 
-              getTextStyle(), 
+              styles.text,
+              getTextStyle(),
               getTextSizeStyle(),
-              disabled && styles.disabledText, 
+              disabled && styles.disabledText,
               textStyle
-            ]} 
-            numberOfLines={1} 
+            ]}
+            numberOfLines={1}
             ellipsizeMode="tail"
           >
             {title}
@@ -112,7 +124,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 8,
-    ...(Platform.OS === 'ios' ? SHADOWS.small : { 
+    ...(Platform.OS === 'ios' ? SHADOWS.small : {
       elevation: 2,
       shadowColor: "#000",
     }),
@@ -135,19 +147,23 @@ const styles = StyleSheet.create({
   // Button types
   primaryButton: {
     backgroundColor: COLORS.primary,
+    borderWidth: 1,
+    borderColor: COLORS.primaryDark,
   },
   primaryText: {
     color: COLORS.white,
   },
   secondaryButton: {
     backgroundColor: COLORS.secondary,
+    borderWidth: 1,
+    borderColor: COLORS.secondaryDark,
   },
   secondaryText: {
     color: COLORS.text.primary,
   },
   outlineButton: {
     backgroundColor: "transparent",
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: COLORS.primary,
   },
   outlineText: {
@@ -163,6 +179,31 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.success,
   },
   successText: {
+    color: COLORS.white,
+  },
+  earthButton: {
+    backgroundColor: COLORS.earth,
+    borderWidth: 1,
+    borderColor: COLORS.earthDark,
+  },
+  earthText: {
+    color: COLORS.white,
+  },
+  lightGreenButton: {
+    backgroundColor: COLORS.primaryLighter,
+    borderWidth: 1,
+    borderColor: COLORS.primary,
+  },
+  lightGreenText: {
+    color: COLORS.primaryDark,
+    fontWeight: "bold",
+  },
+  gradientButton: {
+    backgroundColor: COLORS.primary,
+    borderWidth: 1,
+    borderColor: COLORS.primaryDark,
+  },
+  gradientText: {
     color: COLORS.white,
   },
   // Button sizes

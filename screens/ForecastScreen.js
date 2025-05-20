@@ -1,23 +1,22 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Platform } from "react-native"
+import { Platform, useWindowDimensions } from "react-native"
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, RefreshControl, SafeAreaView, TextInput, ActivityIndicator } from "react-native"
 import { useTranslation } from "react-i18next"
 import { Ionicons } from "@expo/vector-icons"
 import { LineChart } from "react-native-chart-kit"
-import { Dimensions } from "react-native"
 import DateTimePicker from "@react-native-community/datetimepicker"
 
 import Header from "../components/Header"
+import WebLayout from "../components/WebLayout"
 import Card from "../components/Card"
 import Button from "../components/Button"
 import Dropdown from "../components/Dropdown"
-import { COLORS, FONT, SPACING } from "../theme"
+import FilterSection from "../components/FilterSection"
+import { COLORS, FONT, SPACING, SHADOWS } from "../theme"
 import { useApp } from "../context/AppContext"
 import { getForecast, getPriceHistory, getModelPrediction } from "../services/cropPricesService"
-
-const screenWidth = Dimensions.get("window").width
 
 // Format date for input field (YYYY-MM-DD)
 const formatDateForInput = (date) => {
@@ -65,41 +64,7 @@ const validateDate = (dateString) => {
          reconstructedDate.getDate() === day;
 };
 
-const SHADOWS = {
-  small: {
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
 
-    elevation: 2,
-  },
-  medium: {
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 3,
-    },
-    shadowOpacity: 0.29,
-    shadowRadius: 4.65,
-
-    elevation: 7,
-  },
-  large: {
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 7,
-    },
-    shadowOpacity: 0.41,
-    shadowRadius: 9.11,
-
-    elevation: 14,
-  },
-}
 
 const ForecastScreen = ({ navigation }) => {
   const { t } = useTranslation()
@@ -381,7 +346,240 @@ const ForecastScreen = ({ navigation }) => {
     },
   }
 
-  return (
+  // Render content function for reuse between web and mobile
+  const renderContent = () => (
+    <>
+      <FilterSection
+        commodityOptions={commodityOptions}
+        locationOptions={locationOptions}
+        selectedCommodity={selectedCommodity}
+        selectedLocation={selectedLocation}
+        onSelectCommodity={setSelectedCommodity}
+        onSelectLocation={setSelectedLocation}
+        commodityLabel={t("dashboard.commodity")}
+        locationLabel={t("historical.location")}
+      />
+    </>
+  );
+
+  // Return different layouts based on platform
+  return isWebPlatform ? (
+    <WebLayout
+      title={t("forecast.title")}
+      currentScreen="Forecast"
+      navigation={navigation}
+    >
+      <FilterSection
+        commodityOptions={commodityOptions}
+        locationOptions={locationOptions}
+        selectedCommodity={selectedCommodity}
+        selectedLocation={selectedLocation}
+        onSelectCommodity={setSelectedCommodity}
+        onSelectLocation={setSelectedLocation}
+        commodityLabel={t("dashboard.commodity")}
+        locationLabel={t("historical.location")}
+      />
+
+        {priceData ? (
+          <>
+            <Card style={styles.forecastCard}>
+              <Text style={styles.cardTitle}>
+                {t("common.language") === "en"
+                  ? commodities.find((c) => c.id === selectedCommodity)?.name
+                  : commodities.find((c) => c.id === selectedCommodity)?.name_ur}
+                {" - "}
+                {t("common.language") === "en"
+                  ? locations.find((l) => l.id === selectedLocation)?.name
+                  : locations.find((l) => l.id === selectedLocation)?.name_ur}
+              </Text>
+
+              <View style={styles.dateRangeContainer}>
+                <Text style={styles.dateRangeTitle}>
+                  {t("forecast.forecastDateRange") || "Forecast Date Range"}
+                </Text>
+
+                <View style={styles.datePickersContainer}>
+                  <View style={styles.datePicker}>
+                    <Text style={styles.datePickerLabel}>{t("historical.from")}</Text>
+                    {isWebPlatform ? (
+                      <TextInput
+                        style={styles.datePickerInput}
+                        value={startDateInput}
+                        onChangeText={handleStartDateInputChange}
+                        placeholder="YYYY-MM-DD"
+                        keyboardType="numeric"
+                        maxLength={10}
+                        autoComplete="off"
+                        autoCorrect={false}
+                      />
+                    ) : (
+                      <>
+                        <TouchableOpacity
+                          style={styles.datePickerButton}
+                          onPress={() => setShowStartDatePicker(true)}
+                        >
+                          <Text style={styles.datePickerButtonText}>
+                            {formatDate(startDate)}
+                          </Text>
+                          <Ionicons
+                            name="calendar-outline"
+                            size={20}
+                            color={COLORS.primary}
+                          />
+                        </TouchableOpacity>
+
+                        {showStartDatePicker && (
+                          <DateTimePicker
+                            value={startDate}
+                            mode="date"
+                            display="default"
+                            onChange={onStartDateChange}
+                            maximumDate={endDate}
+                          />
+                        )}
+                      </>
+                    )}
+                  </View>
+
+                  <View style={styles.datePicker}>
+                    <Text style={styles.datePickerLabel}>{t("historical.to")}</Text>
+                    {isWebPlatform ? (
+                      <TextInput
+                        style={styles.datePickerInput}
+                        value={endDateInput}
+                        onChangeText={handleEndDateInputChange}
+                        placeholder="YYYY-MM-DD"
+                        keyboardType="numeric"
+                        maxLength={10}
+                        autoComplete="off"
+                        autoCorrect={false}
+                      />
+                    ) : (
+                      <>
+                        <TouchableOpacity
+                          style={styles.datePickerButton}
+                          onPress={() => setShowEndDatePicker(true)}
+                        >
+                          <Text style={styles.datePickerButtonText}>
+                            {formatDate(endDate)}
+                          </Text>
+                          <Ionicons
+                            name="calendar-outline"
+                            size={20}
+                            color={COLORS.primary}
+                          />
+                        </TouchableOpacity>
+
+                        {showEndDatePicker && (
+                          <DateTimePicker
+                            value={endDate}
+                            mode="date"
+                            display="default"
+                            onChange={onEndDateChange}
+                            minimumDate={startDate}
+                          />
+                        )}
+                      </>
+                    )}
+                  </View>
+                </View>
+
+                <Button
+                  title={t("common.apply") || "Apply"}
+                  onPress={applyDateRange}
+                  style={styles.applyButton}
+                  loading={isDataLoading}
+                />
+              </View>
+
+              <View style={styles.optionsContainer}>
+                <TouchableOpacity
+                  style={styles.optionButton}
+                  onPress={() => setCompareWithHistorical(!compareWithHistorical)}
+                >
+                  <Ionicons
+                    name={compareWithHistorical ? "checkbox" : "square-outline"}
+                    size={24}
+                    color={COLORS.primary}
+                  />
+                  <Text style={styles.optionText}>{t("forecast.compareHistorical")}</Text>
+                </TouchableOpacity>
+              </View>
+            </Card>
+
+            <Card style={styles.chartCard}>
+              <Text style={styles.chartTitle}>
+                {"AI Model Prediction"}
+              </Text>
+              {priceData.message && (
+                <Text style={styles.messageText}>{priceData.message}</Text>
+              )}
+
+              {getChartData() && (
+                <LineChart
+                  data={getChartData()}
+                  width={screenWidth - 40}
+                  height={220}
+                  chartConfig={chartConfig}
+                  bezier
+                  style={styles.chart}
+                />
+              )}
+
+              <View style={styles.legendContainer}>
+                <View style={styles.legendItem}>
+                  <View style={[styles.legendColor, { backgroundColor: COLORS.primary }]} />
+                  <Text style={styles.legendText}>{t("forecast.predictedPrice")}</Text>
+                </View>
+
+                {compareWithHistorical && (
+                  <View style={styles.legendItem}>
+                    <View style={[styles.legendColor, { backgroundColor: COLORS.accent }]} />
+                    <Text style={styles.legendText}>{t("forecast.actualPrice")}</Text>
+                  </View>
+                )}
+              </View>
+            </Card>
+
+            <View style={styles.forecastDetailsCard}>
+              <Text style={styles.forecastDetailsTitle}>{t("forecast.forecastDetails")}</Text>
+
+              <View style={styles.forecastDetailsTable}>
+                <View style={styles.tableHeader}>
+                  <Text style={styles.tableHeaderCell}>{t("common.date")}</Text>
+                  <Text style={styles.tableHeaderCell}>{t("forecast.predictedPrice")}</Text>
+                  {compareWithHistorical && priceData.history && (
+                    <Text style={styles.tableHeaderCell}>{t("forecast.actualPrice")}</Text>
+                  )}
+                </View>
+
+                {priceData.forecast.slice(0, Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24))).map((item, index) => {
+                  // Find matching historical data for this date if comparing
+                  const historicalItem = compareWithHistorical && priceData.history ?
+                    priceData.history.find(h => new Date(h.date).toDateString() === new Date(item.date).toDateString()) : null;
+
+                  return (
+                    <View key={index} style={styles.tableRow}>
+                      <Text style={styles.tableCell}>{new Date(item.date).toLocaleDateString()}</Text>
+                      <Text style={styles.tableCell}>PKR {item.price}</Text>
+                      {compareWithHistorical && priceData.history && (
+                        <Text style={styles.tableCell}>
+                          {historicalItem ? `PKR ${historicalItem.price}` : "-"}
+                        </Text>
+                      )}
+                    </View>
+                  );
+                })}
+              </View>
+            </View>
+          </>
+        ) : (
+          <View style={styles.loadingContainer}>
+            <Text style={styles.loadingText}>{t("common.loading")}</Text>
+          </View>
+        )}
+      </WebLayout>
+  ) : (
     <SafeAreaView style={styles.container}>
       <Header title={t("forecast.title")} showBackButton={true} />
 
@@ -390,23 +588,16 @@ const ForecastScreen = ({ navigation }) => {
         contentContainerStyle={styles.scrollContent}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
-        <View style={styles.filtersContainer}>
-          <Dropdown
-            label={t("dashboard.commodity")}
-            data={commodityOptions}
-            value={selectedCommodity}
-            onSelect={setSelectedCommodity}
-            style={styles.dropdown}
-          />
-
-          <Dropdown
-            label={t("historical.location")}
-            data={locationOptions}
-            value={selectedLocation}
-            onSelect={setSelectedLocation}
-            style={styles.dropdown}
-          />
-        </View>
+        <FilterSection
+          commodityOptions={commodityOptions}
+          locationOptions={locationOptions}
+          selectedCommodity={selectedCommodity}
+          selectedLocation={selectedLocation}
+          onSelectCommodity={setSelectedCommodity}
+          onSelectLocation={setSelectedLocation}
+          commodityLabel={t("dashboard.commodity")}
+          locationLabel={t("historical.location")}
+        />
 
         {priceData ? (
           <>

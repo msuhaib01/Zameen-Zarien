@@ -32,7 +32,10 @@ const Dropdown = ({
 
   const renderItem = ({ item }) => (
     <TouchableOpacity
-      style={styles.item}
+      style={[
+        styles.item,
+        item.value === value && styles.selectedItem,
+      ]}
       onPress={() => {
         onSelect(item.value);
         setVisible(false);
@@ -70,7 +73,7 @@ const Dropdown = ({
         <Ionicons
           name={visible ? "chevron-up" : "chevron-down"}
           size={20}
-          color={COLORS.gray}
+          color={COLORS.primaryLight}
         />
       </TouchableOpacity>
       {error && <Text style={styles.errorText}>{error}</Text>}
@@ -129,8 +132,8 @@ const styles = StyleSheet.create({
   label: {
     fontSize: FONT.sizes.medium,
     marginBottom: SPACING.small,
-    color: COLORS.text.primary,
-    fontWeight: "500",
+    color: COLORS.primaryDark,
+    fontWeight: "600",
   },
   dropdown: {
     backgroundColor: COLORS.white,
@@ -142,6 +145,11 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     minHeight: 48,
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
   },
   dropdownError: {
     borderColor: COLORS.error,
@@ -194,6 +202,15 @@ const styles = StyleSheet.create({
     paddingBottom: SPACING.large,
     flexGrow: 1,
   },
+
+  itemText: {
+    fontSize: FONT.sizes.medium,
+    color: COLORS.text.primary,
+  },
+  selectedItemText: {
+    color: COLORS.primary,
+    fontWeight: "bold",
+  },
   item: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -203,14 +220,13 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
     minHeight: 48,
+    borderLeftWidth: 0,
+    borderLeftColor: 'transparent',
   },
-  itemText: {
-    fontSize: FONT.sizes.medium,
-    color: COLORS.text.primary,
-  },
-  selectedItemText: {
-    color: COLORS.primary,
-    fontWeight: "bold",
+  selectedItem: {
+    backgroundColor: 'rgba(76, 175, 80, 0.05)',
+    borderLeftWidth: 3,
+    borderLeftColor: COLORS.primary,
   },
 });
 

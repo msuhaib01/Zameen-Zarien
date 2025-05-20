@@ -12,11 +12,13 @@ import {
   Alert,
   Modal,
   FlatList,
+  Platform,
 } from "react-native"
 import { useTranslation } from "react-i18next"
 import { Ionicons } from "@expo/vector-icons"
 
 import Header from "../components/Header"
+import WebLayout from "../components/WebLayout"
 import Card from "../components/Card"
 import Button from "../components/Button"
 import Dropdown from "../components/Dropdown"
@@ -229,7 +231,73 @@ const NotificationsScreen = ({ navigation }) => {
   // Count unread notifications
   const unreadCount = notifications.filter((notification) => !notification.read).length
 
-  return (
+  const [isWebPlatform] = useState(Platform.OS === "web");
+
+  // Render content function for reuse between web and mobile
+  const renderContent = () => (
+    <>
+      <View style={styles.actionsContainer}>
+        <View style={styles.notificationCountContainer}>
+          <Text style={styles.notificationCountText}>
+            {unreadCount > 0 ? t("notifications.unreadCount", { count: unreadCount }) : t("notifications.allRead")}
+          </Text>
+        </View>
+
+        <View style={styles.actionButtons}>
+          <TouchableOpacity style={styles.actionButton} onPress={() => setFilterModalVisible(true)}>
+            <Ionicons name="filter" size={20} color={COLORS.primary} />
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.actionButton} onPress={markAllAsRead}>
+            <Ionicons name="checkmark-done" size={20} color={COLORS.primary} />
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.actionButton} onPress={confirmDeleteAll}>
+            <Ionicons name="trash" size={20} color={COLORS.accent} />
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      <Card style={styles.dndCard}>
+        <View style={styles.dndContainer}>
+          <View style={styles.dndTextContainer}>
+            <Text style={styles.dndTitle}>{t("notifications.doNotDisturb")}</Text>
+            <Text style={styles.dndDescription}>{t("notifications.dndDescription")}</Text>
+          </View>
+          <ToggleSwitch value={doNotDisturb} onValueChange={toggleDoNotDisturb} />
+        </View>
+      </Card>
+
+      {filteredNotifications.length > 0 ? (
+        <FlatList
+          data={filteredNotifications}
+          renderItem={renderNotificationItem}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.notificationsList}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        />
+      ) : (
+        <View style={styles.emptyContainer}>
+          <Ionicons name="notifications-off-outline" size={64} color={COLORS.gray} />
+          <Text style={styles.emptyText}>{t("notifications.noNotifications")}</Text>
+          {(selectedFilter !== "all" || dateFilter !== "all" || commodityFilter !== "all") && (
+            <Text style={styles.emptySubtext}>{t("notifications.tryDifferentFilters")}</Text>
+          )}
+        </View>
+      )}
+    </>
+  );
+
+  // Return different layouts based on platform
+  return isWebPlatform ? (
+    <WebLayout
+      title={t("notifications.title")}
+      currentScreen="Notifications"
+      navigation={navigation}
+    >
+      {renderContent()}
+    </WebLayout>
+  ) : (
     <SafeAreaView style={styles.container}>
       <Header title={t("notifications.title")} showBackButton={true} />
 

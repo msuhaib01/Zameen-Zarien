@@ -31,19 +31,19 @@ const AnimatedSplashScreen = ({ onAnimationComplete }) => {
           toValue: 3.0, // Scale up to create zoom out effect
           duration: 900,
           easing: Easing.out(Easing.ease),
-          useNativeDriver: true,
+          useNativeDriver: false, // Change to false
         }),
         Animated.timing(logoOpacity, {
           toValue: 0,
           duration: 700,
           delay: 150,
-          useNativeDriver: true,
+          useNativeDriver: false, // Change to false
         }),
         Animated.timing(backgroundOpacity, {
           toValue: 0,
           duration: 800,
           delay: 100,
-          useNativeDriver: true,
+          useNativeDriver: false, // Change to false
         })
       ])
     ];

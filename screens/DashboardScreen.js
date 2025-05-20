@@ -12,6 +12,7 @@ import {
   Platform,
   ActivityIndicator,
   TextInput,
+  useWindowDimensions,
 } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
@@ -20,9 +21,12 @@ import { Dimensions } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 
 import Header from "../components/Header";
+import WebLayout from "../components/WebLayout";
 import Card from "../components/Card";
 import Button from "../components/Button";
 import Dropdown from "../components/Dropdown";
+import FilterSection from "../components/FilterSection";
+import GridContainer from "../components/GridContainer";
 import { COLORS, FONT, SPACING, SHADOWS } from "../theme";
 import { useApp } from "../context/AppContext";
 import {
@@ -30,7 +34,7 @@ import {
   checkApiAvailability,
 } from "../services/cropPricesService";
 
-const screenWidth = Dimensions.get("window").width;
+// We'll use useWindowDimensions hook for responsive sizing
 
 // Format date for input field (YYYY-MM-DD)
 const formatDateForInput = (date) => {
@@ -84,6 +88,7 @@ const DashboardScreen = ({ navigation }) => {
   );
   const [endDateInput, setEndDateInput] = useState(formatDateForInput(endDate));
   const [isWebPlatform] = useState(Platform.OS === "web");
+  const windowDimensions = useWindowDimensions();
 
   // Date validation function
   const validateDate = (dateString) => {
@@ -352,10 +357,22 @@ const DashboardScreen = ({ navigation }) => {
     // Get all data points from the selected date range
     let chartData = [...priceData.history];
 
-    // If we have too many data points, we need to sample them to avoid overcrowding the chart
-    // Calculate max data points based on date range
+    // Calculate max data points based on screen width and date range
     const daysDiff = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
-    const MAX_DATA_POINTS = daysDiff > 365 ? 36 : 15; // More points for longer ranges
+
+    // Adjust max data points based on screen width for web
+    let MAX_DATA_POINTS;
+    if (isWebPlatform) {
+      // For web, we can show more data points on wider screens
+      const basePoints = windowDimensions.width < 768 ? 15 : 30;
+      MAX_DATA_POINTS = daysDiff > 365 ? basePoints * 2 : basePoints;
+    } else {
+      // For mobile, keep it more limited
+      MAX_DATA_POINTS = daysDiff > 365 ? 20 : 12;
+    }
+
+    // Store original data for tooltips
+    const originalData = [...chartData];
 
     if (chartData.length > MAX_DATA_POINTS) {
       // Sample the data to get a reasonable number of points
@@ -402,16 +419,37 @@ const DashboardScreen = ({ navigation }) => {
       }
     };
 
+    // Format the full date for tooltips
+    const formatFullDate = (dateStr) => {
+      const date = new Date(dateStr);
+      const monthNames = [
+        "January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December"
+      ];
+      return `${date.getDate()} ${monthNames[date.getMonth()]} ${date.getFullYear()}`;
+    };
+
+    // Add tooltips data
+    const tooltipData = chartData.map(item => ({
+      date: formatFullDate(item.date),
+      price: `PKR ${item.price}`,
+      rawDate: new Date(item.date)
+    }));
+
     return {
       labels: chartData.map((item) => formatChartDate(item.date)),
       datasets: [
         {
           data: chartData.map((item) => item.price),
-          color: (opacity = 1) => `rgba(0, 100, 0, ${opacity})`, // Dark green
-          strokeWidth: 2,
+          color: (opacity = 1) => `rgba(46, 125, 50, ${opacity})`, // Dark green
+          strokeWidth: 3,
         },
       ],
       legend: [t("dashboard.priceHistory")],
+      // Add tooltip data
+      tooltipData: tooltipData,
+      // Add original data for reference
+      originalData: originalData,
     };
   };
 
@@ -420,70 +458,71 @@ const DashboardScreen = ({ navigation }) => {
     backgroundGradientFrom: COLORS.white,
     backgroundGradientTo: COLORS.white,
     decimalPlaces: 0,
-    color: (opacity = 1) => `rgba(76, 175, 80, ${opacity})`, // Green color
-    labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+    color: (opacity = 1) => `rgba(46, 125, 50, ${opacity})`, // Dark green color
+    labelColor: (opacity = 1) => `rgba(33, 33, 33, ${opacity})`,
     style: {
       borderRadius: 16,
     },
     propsForDots: {
       r: "5",
       strokeWidth: "2",
-      stroke: COLORS.primary,
+      stroke: COLORS.primaryDark,
     },
-    strokeWidth: 2,
+    strokeWidth: 3,
     barPercentage: 0.5,
     useShadowColorFromDataset: false,
     propsForBackgroundLines: {
       strokeWidth: 1,
-      stroke: "#e3e3e3",
+      stroke: "#e0e0e0",
       strokeDasharray: "5, 5",
     },
     propsForLabels: {
-      fontSize: 10,
+      fontSize: isWebPlatform ? 12 : 10,
       fontWeight: "bold",
+      fill: COLORS.text.secondary,
+    },
+    // Add tooltip configuration
+    tooltipConfig: {
+      backgroundColor: 'rgba(255, 255, 255, 0.95)',
+      borderRadius: 8,
+      borderColor: COLORS.border,
+      borderWidth: 1,
+      padding: 10,
+      textColor: COLORS.text.primary,
+      titleColor: COLORS.primary,
+      titleFontSize: 14,
+      valueFontSize: 16,
+      ...SHADOWS.small,
     },
   };
 
-  return (
-    <SafeAreaView style={styles.container}>
-      <Header
-        title={t("dashboard.title")}
-        showNotificationsButton={true}
-        onNotificationsPress={() => navigation.navigate("Notifications")}
+  // Determine the content to render
+  const renderContent = () => (
+    <>
+      <FilterSection
+        commodityOptions={commodityOptions}
+        locationOptions={locationOptions}
+        selectedCommodity={selectedCommodity}
+        selectedLocation={selectedLocation}
+        onSelectCommodity={setSelectedCommodity}
+        onSelectLocation={setSelectedLocation}
+        commodityLabel={t("dashboard.commodity")}
+        locationLabel={t("historical.location")}
+        style={styles.filtersCard}
       />
 
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-      >
-        <View style={styles.filtersContainer}>
-          <Dropdown
-            label={t("dashboard.commodity")}
-            data={commodityOptions}
-            value={selectedCommodity}
-            onSelect={setSelectedCommodity}
-            style={styles.dropdown}
-          />
-
-          <Dropdown
-            label={t("historical.location")}
-            data={locationOptions}
-            value={selectedLocation}
-            onSelect={setSelectedLocation}
-            style={styles.dropdown}
-          />
+      <Card style={styles.dateRangeCard} variant="default" shadow="subtle">
+        <View style={styles.dateRangeHeader}>
+          <Text style={styles.dateRangeTitle}>{t("historical.dateRange")}</Text>
+          <Ionicons name="calendar-outline" size={22} color={COLORS.primary} />
         </View>
 
-        <Card style={styles.dateRangeCard}>
-          <Text style={styles.dateRangeTitle}>{t("historical.dateRange")}</Text>
-
-          <View style={styles.datePickersContainer}>
-            <View style={styles.datePicker}>
-              <Text style={styles.datePickerLabel}>{t("historical.from")}</Text>
-              {isWebPlatform ? (
+        <View style={styles.datePickersContainer}>
+          <View style={styles.datePicker}>
+            <Text style={styles.datePickerLabel}>{t("historical.from")}</Text>
+            {isWebPlatform ? (
+              <View style={styles.dateInputWrapper}>
+                <Ionicons name="calendar-outline" size={18} color={COLORS.primary} style={styles.dateInputIcon} />
                 <TextInput
                   style={styles.datePickerInput}
                   value={startDateInput}
@@ -494,38 +533,38 @@ const DashboardScreen = ({ navigation }) => {
                   autoComplete="off"
                   autoCorrect={false}
                 />
-              ) : (
-                <>
-                  <TouchableOpacity
-                    style={styles.datePickerButton}
-                    onPress={() => setShowStartDatePicker(true)}
-                  >
-                    <Text style={styles.datePickerButtonText}>
-                      {formatDate(startDate)}
-                    </Text>
-                    <Ionicons
-                      name="calendar-outline"
-                      size={20}
-                      color={COLORS.primary}
-                    />
-                  </TouchableOpacity>
+              </View>
+            ) : (
+              <>
+                <TouchableOpacity
+                  style={styles.datePickerButton}
+                  onPress={() => setShowStartDatePicker(true)}
+                >
+                  <Ionicons name="calendar-outline" size={18} color={COLORS.primary} style={styles.dateButtonIcon} />
+                  <Text style={styles.datePickerButtonText}>
+                    {formatDate(startDate)}
+                  </Text>
+                  <Ionicons name="chevron-down" size={16} color={COLORS.gray} />
+                </TouchableOpacity>
 
-                  {showStartDatePicker && (
-                    <DateTimePicker
-                      value={startDate}
-                      mode="date"
-                      display="default"
-                      onChange={onStartDateChange}
-                      maximumDate={endDate}
-                    />
-                  )}
-                </>
-              )}
-            </View>
+                {showStartDatePicker && (
+                  <DateTimePicker
+                    value={startDate}
+                    mode="date"
+                    display="default"
+                    onChange={onStartDateChange}
+                    maximumDate={endDate}
+                  />
+                )}
+              </>
+            )}
+          </View>
 
-            <View style={styles.datePicker}>
-              <Text style={styles.datePickerLabel}>{t("historical.to")}</Text>
-              {isWebPlatform ? (
+          <View style={styles.datePicker}>
+            <Text style={styles.datePickerLabel}>{t("historical.to")}</Text>
+            {isWebPlatform ? (
+              <View style={styles.dateInputWrapper}>
+                <Ionicons name="calendar-outline" size={18} color={COLORS.primary} style={styles.dateInputIcon} />
                 <TextInput
                   style={styles.datePickerInput}
                   value={endDateInput}
@@ -536,53 +575,70 @@ const DashboardScreen = ({ navigation }) => {
                   autoComplete="off"
                   autoCorrect={false}
                 />
-              ) : (
-                <>
-                  <TouchableOpacity
-                    style={styles.datePickerButton}
-                    onPress={() => setShowEndDatePicker(true)}
-                  >
-                    <Text style={styles.datePickerButtonText}>
-                      {formatDate(endDate)}
-                    </Text>
-                    <Ionicons
-                      name="calendar-outline"
-                      size={20}
-                      color={COLORS.primary}
-                    />
-                  </TouchableOpacity>
+              </View>
+            ) : (
+              <>
+                <TouchableOpacity
+                  style={styles.datePickerButton}
+                  onPress={() => setShowEndDatePicker(true)}
+                >
+                  <Ionicons name="calendar-outline" size={18} color={COLORS.primary} style={styles.dateButtonIcon} />
+                  <Text style={styles.datePickerButtonText}>
+                    {formatDate(endDate)}
+                  </Text>
+                  <Ionicons name="chevron-down" size={16} color={COLORS.gray} />
+                </TouchableOpacity>
 
-                  {showEndDatePicker && (
-                    <DateTimePicker
-                      value={endDate}
-                      mode="date"
-                      display="default"
-                      onChange={onEndDateChange}
-                      minimumDate={startDate}
-                      maximumDate={new Date()}
-                    />
-                  )}
-                </>
-              )}
-            </View>
+                {showEndDatePicker && (
+                  <DateTimePicker
+                    value={endDate}
+                    mode="date"
+                    display="default"
+                    onChange={onEndDateChange}
+                    minimumDate={startDate}
+                    maximumDate={new Date()}
+                  />
+                )}
+              </>
+            )}
           </View>
+        </View>
 
-          <Button
-            title={t("common.apply") || "Apply"}
-            onPress={applyDateRange}
-            style={styles.applyButton}
-            loading={isDataLoading}
-          />
-        </Card>
-
-        {isDataLoading ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={COLORS.primary} />
-            <Text style={styles.loadingText}>{t("common.loading")}</Text>
+        <TouchableOpacity
+          style={styles.applyButton}
+          onPress={applyDateRange}
+          activeOpacity={0.8}
+          disabled={isDataLoading}
+        >
+          <View style={styles.applyButtonContent}>
+            {isDataLoading ? (
+              <ActivityIndicator size="small" color={COLORS.white} />
+            ) : (
+              <>
+                <Ionicons name="search-outline" size={18} color={COLORS.white} style={styles.applyButtonIcon} />
+                <Text style={styles.applyButtonText}>
+                  {t("common.apply") || "Apply"}
+                </Text>
+              </>
+            )}
           </View>
-        ) : priceData ? (
-          <>
-            <Card style={styles.priceCard}>
+        </TouchableOpacity>
+      </Card>
+
+      {isDataLoading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+          <Text style={styles.loadingText}>{t("common.loading")}</Text>
+        </View>
+      ) : priceData ? (
+        <>
+          <Card
+            style={styles.priceCard}
+            variant="default"
+            shadow="large"
+          >
+            {/* Header section with commodity and location */}
+            <View style={styles.priceCardHeader}>
               <Text style={styles.commodityName}>
                 {t("common.language") === "en"
                   ? commodities.find((c) => c.id === selectedCommodity)?.name
@@ -597,156 +653,221 @@ const DashboardScreen = ({ navigation }) => {
               <Text style={styles.dateRangeInfo}>
                 {formatDate(startDate)} - {formatDate(endDate)}
               </Text>
+            </View>
 
+            {/* Current price with highlight */}
+            <View style={styles.currentPriceWrapper}>
               <View style={styles.currentPriceContainer}>
                 <Text style={styles.currentPriceLabel}>
-                  {t("dashboard.currentPrice")}:
+                  {t("dashboard.currentPrice")}
                 </Text>
                 <Text style={styles.currentPriceValue}>
                   PKR {priceData.current}
                 </Text>
               </View>
+            </View>
 
-              <View style={styles.priceMetricsContainer}>
-                <View style={styles.priceMetric}>
-                  <Text style={styles.priceMetricLabel}>
-                    {t("dashboard.highestPrice")}
-                  </Text>
-                  <Text style={styles.priceMetricValue}>
-                    PKR {priceData.highest}
-                  </Text>
+            {/* Price metrics in cards */}
+            <View style={styles.priceMetricsContainer}>
+              <View style={styles.priceMetric}>
+                <View style={[styles.priceMetricIcon, styles.highestPriceIcon]}>
+                  <Ionicons name="arrow-up" size={16} color={COLORS.white} />
                 </View>
-
-                <View style={styles.priceMetric}>
-                  <Text style={styles.priceMetricLabel}>
-                    {t("dashboard.lowestPrice")}
-                  </Text>
-                  <Text style={styles.priceMetricValue}>
-                    PKR {priceData.lowest}
-                  </Text>
-                </View>
-
-                <View style={styles.priceMetric}>
-                  <Text style={styles.priceMetricLabel}>
-                    {t("dashboard.averagePrice")}
-                  </Text>
-                  <Text style={styles.priceMetricValue}>
-                    PKR {priceData.average}
-                  </Text>
-                </View>
+                <Text style={styles.priceMetricLabel}>
+                  {t("dashboard.highestPrice")}
+                </Text>
+                <Text style={styles.priceMetricValue}>
+                  PKR {priceData.highest}
+                </Text>
               </View>
-            </Card>
 
-            <Card style={styles.chartCard}>
+              <View style={styles.priceMetric}>
+                <View style={[styles.priceMetricIcon, styles.lowestPriceIcon]}>
+                  <Ionicons name="arrow-down" size={16} color={COLORS.white} />
+                </View>
+                <Text style={styles.priceMetricLabel}>
+                  {t("dashboard.lowestPrice")}
+                </Text>
+                <Text style={styles.priceMetricValue}>
+                  PKR {priceData.lowest}
+                </Text>
+              </View>
+
+              <View style={styles.priceMetric}>
+                <View style={[styles.priceMetricIcon, styles.averagePriceIcon]}>
+                  <Ionicons name="analytics" size={16} color={COLORS.white} />
+                </View>
+                <Text style={styles.priceMetricLabel}>
+                  {t("dashboard.averagePrice")}
+                </Text>
+                <Text style={styles.priceMetricValue}>
+                  PKR {priceData.average}
+                </Text>
+              </View>
+            </View>
+          </Card>
+
+          <Card
+            style={styles.chartCard}
+            variant="default"
+            shadow="medium"
+          >
+            <View style={styles.chartCardHeader}>
               <Text style={styles.chartTitle}>
                 {t("dashboard.priceHistory")}
               </Text>
-
-              {getChartData() ? (
-                <LineChart
-                  data={getChartData()}
-                  width={screenWidth - 40}
-                  height={220}
-                  chartConfig={chartConfig}
-                  bezier
-                  style={styles.chart}
-                  yAxisSuffix=" PKR"
-                  yAxisInterval={1}
-                  fromZero={true}
-                  withDots={true}
-                  withInnerLines={true}
-                  withOuterLines={true}
-                  withVerticalLines={true}
-                  withHorizontalLines={true}
-                  withVerticalLabels={true}
-                  withHorizontalLabels={true}
-                  horizontalLabelRotation={0}
-                />
-              ) : (
-                <View style={styles.noDataContainer}>
-                  <Text style={styles.noDataText}>
-                    {t("historical.noChartDataAvailable")}
-                  </Text>
-                  <Text style={styles.noDataSubText}>
-                    {t("common.language") === "en"
-                      ? `No price data available for ${
-                          commodities.find((c) => c.id === selectedCommodity)
-                            ?.name
-                        } in ${
-                          locations.find((l) => l.id === selectedLocation)?.name
-                        }`
-                      : `${
-                          commodities.find((c) => c.id === selectedCommodity)
-                            ?.name_ur
-                        } کے لیے ${
-                          locations.find((l) => l.id === selectedLocation)
-                            ?.name_ur
-                        } میں کوئی قیمت کا ڈیٹا دستیاب نہیں ہے`}
-                  </Text>
-                  <Text style={styles.noDataSubText}>
-                    {`${formatDate(startDate)} - ${formatDate(endDate)}`}
-                  </Text>
+              <View style={styles.chartLegend}>
+                <View style={styles.legendItem}>
+                  <View style={styles.legendDot} />
+                  <Text style={styles.legendText}>{t("dashboard.priceHistory")}</Text>
                 </View>
-              )}
-            </Card>
-
-            <View style={styles.navigationContainer}>
-              <Button
-                title={t("dashboard.setAlert")}
-                onPress={() => navigation.navigate("Alerts")}
-                type="primary"
-                icon={
-                  <Ionicons
-                    name="notifications-outline"
-                    size={18}
-                    color={COLORS.white}
-                    style={styles.buttonIcon}
-                  />
-                }
-                style={styles.navigationButton}
-              />
-
-              <Button
-                title={t("dashboard.viewRealTime")}
-                onPress={() => navigation.navigate("RealTime")}
-                type="primary"
-                icon={
-                  <Ionicons
-                    name="time-outline"
-                    size={18}
-                    color={COLORS.white}
-                    style={styles.buttonIcon}
-                  />
-                }
-                style={styles.navigationButton}
-              />
-
-              <Button
-                title={t("dashboard.viewForecast")}
-                onPress={() => navigation.navigate("Forecast")}
-                type="primary"
-                icon={
-                  <Ionicons
-                    name="trending-up-outline"
-                    size={18}
-                    color={COLORS.white}
-                    style={styles.buttonIcon}
-                  />
-                }
-                style={styles.navigationButton}
-              />
+              </View>
             </View>
-          </>
-        ) : (
-          <View style={styles.noDataContainer}>
-            <Text style={styles.noDataText}>
-              {t("historical.noDataAvailable")}
-            </Text>
-            <Text style={styles.noDataSubText}>
-              {t("historical.tryDifferentDateRange")}
-            </Text>
-          </View>
-        )}
+
+            {getChartData() ? (
+              <View style={styles.chartWrapper}>
+                {/* Chart container with horizontal scroll for many data points */}
+                <View style={styles.chartScrollContainer}>
+                  <LineChart
+                    data={getChartData()}
+                    width={
+                      isWebPlatform
+                        ? Math.max(
+                            // Ensure minimum width based on data points
+                            Math.min(windowDimensions.width - 80, 1200),
+                            // Add more width for many data points
+                            getChartData().labels.length * 20
+                          )
+                        : Math.max(windowDimensions.width - 40, getChartData().labels.length * 15)
+                    }
+                    height={isWebPlatform ? 250 : 220}
+                    chartConfig={{
+                      ...chartConfig,
+                      color: (opacity = 1) => `rgba(46, 125, 50, ${opacity})`,
+                      propsForDots: {
+                        r: "5",
+                        strokeWidth: "2",
+                        stroke: COLORS.primaryDark,
+                      },
+                      strokeWidth: 3,
+                    }}
+                    bezier
+                    style={styles.chart}
+                    yAxisSuffix=" PKR"
+                    yAxisInterval={1}
+                    fromZero={false}
+                    withDots={true}
+                    withInnerLines={true}
+                    withOuterLines={true}
+                    withVerticalLines={true}
+                    withHorizontalLines={true}
+                    withVerticalLabels={true}
+                    withHorizontalLabels={true}
+                    horizontalLabelRotation={isWebPlatform ? 0 : 30}
+                    decorator={() => {
+                      return (
+                        <View style={styles.tooltipContainer}>
+                          {isWebPlatform && (
+                            <View style={styles.tooltipHint}>
+                              <Ionicons name="information-circle-outline" size={16} color={COLORS.info} />
+                              <Text style={styles.tooltipHintText}>
+                                {t("dashboard.hoverForDetails")}
+                              </Text>
+                            </View>
+                          )}
+                        </View>
+                      )
+                    }}
+                    onDataPointClick={({value, index, x, y}) => {
+                      // Show tooltip with date and price
+                      if (getChartData().tooltipData && getChartData().tooltipData[index]) {
+                        const tooltipData = getChartData().tooltipData[index];
+                        alert(`${tooltipData.date}\n${tooltipData.price}`);
+                      }
+                    }}
+                  />
+                </View>
+
+                {/* Chart legend and info */}
+                <View style={styles.chartInfo}>
+                  <View style={styles.chartInfoItem}>
+                    <Ionicons name="trending-up" size={16} color={COLORS.primaryLight} />
+                    <Text style={styles.chartInfoText}>
+                      {t("dashboard.priceHistoryInfo")}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            ) : (
+              <View style={styles.noDataContainer}>
+                <Ionicons name="analytics-outline" size={40} color={COLORS.lightGray} style={styles.noDataIcon} />
+                <Text style={styles.noDataText}>
+                  {t("historical.noChartDataAvailable")}
+                </Text>
+                <Text style={styles.noDataSubText}>
+                  {t("common.language") === "en"
+                    ? `No price data available for ${
+                        commodities.find((c) => c.id === selectedCommodity)
+                          ?.name
+                      } in ${
+                        locations.find((l) => l.id === selectedLocation)?.name
+                      }`
+                    : `${
+                        commodities.find((c) => c.id === selectedCommodity)
+                          ?.name_ur
+                      } کے لیے ${
+                        locations.find((l) => l.id === selectedLocation)
+                          ?.name_ur
+                      } میں کوئی قیمت کا ڈیٹا دستیاب نہیں ہے`}
+                </Text>
+                <Text style={styles.noDataSubText}>
+                  {`${formatDate(startDate)} - ${formatDate(endDate)}`}
+                </Text>
+              </View>
+            )}
+          </Card>
+        </>
+      ) : (
+        <View style={styles.noDataContainer}>
+          <Text style={styles.noDataText}>
+            {t("historical.noDataAvailable")}
+          </Text>
+          <Text style={styles.noDataSubText}>
+            {t("historical.tryDifferentDateRange")}
+          </Text>
+        </View>
+      )}
+    </>
+  );
+
+  // Return different layouts based on platform
+  return isWebPlatform ? (
+    <WebLayout
+      title={t("dashboard.title")}
+      currentScreen="Dashboard"
+      navigation={navigation}
+      showNotificationsButton={true}
+      onNotificationsPress={() => navigation.navigate("Notifications")}
+      fullWidth={true}
+    >
+      {renderContent()}
+    </WebLayout>
+  ) : (
+    <SafeAreaView style={styles.container}>
+      <Header
+        title={t("dashboard.title")}
+        showNotificationsButton={true}
+        onNotificationsPress={() => navigation.navigate("Notifications")}
+      />
+
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
+        {renderContent()}
       </ScrollView>
     </SafeAreaView>
   );
@@ -755,7 +876,7 @@ const DashboardScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background.primary,
+    backgroundColor: Platform.OS === "web" ? COLORS.background.green : COLORS.background.primary,
   },
   scrollView: {
     flex: 1,
@@ -766,28 +887,59 @@ const styles = StyleSheet.create({
   notificationButton: {
     padding: SPACING.small,
   },
-  filtersContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
+  filtersCard: {
     marginBottom: SPACING.medium,
+    borderRadius: 16,
+  },
+  filtersTitle: {
+    fontSize: FONT.sizes.medium,
+    fontWeight: "bold",
+    marginBottom: SPACING.medium,
+    color: COLORS.text.primary,
+  },
+  filtersContainer: {
+    flexDirection: Platform.OS === "web" ? "row" : "column",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+  },
+  filterItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: SPACING.medium,
+    ...(Platform.OS === "web" ? {
+      width: "48%",
+    } : {}),
+  },
+  filterIcon: {
+    marginRight: SPACING.small,
+    marginTop: SPACING.medium,
   },
   dropdown: {
     flex: 1,
-    marginHorizontal: SPACING.xs,
   },
   dateRangeCard: {
     marginBottom: SPACING.large,
+    borderRadius: 16,
+  },
+  dateRangeHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: SPACING.medium,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0,0,0,0.05)',
+    paddingBottom: SPACING.medium,
   },
   dateRangeTitle: {
-    fontSize: FONT.sizes.large,
+    fontSize: FONT.sizes.medium,
     fontWeight: "bold",
-    marginBottom: SPACING.medium,
     color: COLORS.text.primary,
   },
   datePickersContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
     marginBottom: SPACING.medium,
+    flexWrap: Platform.OS === "web" ? "wrap" : "nowrap",
   },
   datePicker: {
     flex: 1,
@@ -797,6 +949,22 @@ const styles = StyleSheet.create({
     fontSize: FONT.sizes.medium,
     color: COLORS.text.primary,
     marginBottom: SPACING.small,
+    fontWeight: "500",
+  },
+  dateInputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 8,
+    backgroundColor: COLORS.background.tertiary,
+    paddingHorizontal: SPACING.small,
+  },
+  dateInputIcon: {
+    marginRight: SPACING.small,
+  },
+  dateButtonIcon: {
+    marginRight: SPACING.small,
   },
   datePickerButton: {
     flexDirection: "row",
@@ -811,21 +979,29 @@ const styles = StyleSheet.create({
   datePickerButtonText: {
     fontSize: FONT.sizes.medium,
     color: COLORS.text.primary,
+    flex: 1,
   },
   datePickerInput: {
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 8,
+    flex: 1,
     padding: SPACING.medium,
-    backgroundColor: COLORS.background.tertiary,
     fontSize: FONT.sizes.medium,
     color: COLORS.text.primary,
+    borderWidth: 0,
   },
   applyButton: {
     backgroundColor: COLORS.primary,
     borderRadius: 8,
     padding: SPACING.medium,
     alignItems: "center",
+    ...SHADOWS.primary,
+  },
+  applyButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  applyButtonIcon: {
+    marginRight: SPACING.small,
   },
   applyButtonText: {
     color: COLORS.white,
@@ -834,6 +1010,13 @@ const styles = StyleSheet.create({
   },
   priceCard: {
     marginBottom: SPACING.large,
+    borderRadius: 20,
+  },
+  priceCardHeader: {
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0,0,0,0.05)',
+    paddingBottom: SPACING.medium,
+    marginBottom: SPACING.medium,
   },
   commodityName: {
     fontSize: FONT.sizes.xl,
@@ -846,36 +1029,69 @@ const styles = StyleSheet.create({
     fontSize: FONT.sizes.small,
     textAlign: "center",
     color: COLORS.text.secondary,
-    marginBottom: SPACING.medium,
+  },
+  currentPriceWrapper: {
+    backgroundColor: 'rgba(46, 125, 50, 0.08)',
+    borderRadius: 12,
+    padding: SPACING.large,
+    marginBottom: SPACING.large,
+    borderWidth: 1,
+    borderColor: 'rgba(46, 125, 50, 0.1)',
   },
   currentPriceContainer: {
-    flexDirection: "row",
+    flexDirection: "column",
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: SPACING.large,
   },
   currentPriceLabel: {
-    fontSize: FONT.sizes.large,
-    color: COLORS.text.primary,
-    marginRight: SPACING.small,
+    fontSize: FONT.sizes.medium,
+    color: COLORS.text.secondary,
+    marginBottom: SPACING.small,
+    fontWeight: "500",
   },
   currentPriceValue: {
-    fontSize: FONT.sizes.xxl,
+    fontSize: FONT.sizes.xxxl,
     fontWeight: "bold",
     color: COLORS.primary,
   },
   priceMetricsContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
+    marginHorizontal: -SPACING.small,
   },
   priceMetric: {
     alignItems: "center",
     flex: 1,
+    backgroundColor: COLORS.white,
+    borderRadius: 12,
+    padding: SPACING.medium,
+    marginHorizontal: SPACING.small,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.05)',
+    ...SHADOWS.subtle,
+  },
+  priceMetricIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: SPACING.small,
+  },
+  highestPriceIcon: {
+    backgroundColor: COLORS.chart.green,
+  },
+  lowestPriceIcon: {
+    backgroundColor: COLORS.chart.red,
+  },
+  averagePriceIcon: {
+    backgroundColor: COLORS.chart.blue,
   },
   priceMetricLabel: {
     fontSize: FONT.sizes.small,
     color: COLORS.text.secondary,
     marginBottom: SPACING.xs,
+    textAlign: 'center',
   },
   priceMetricValue: {
     fontSize: FONT.sizes.medium,
@@ -884,23 +1100,171 @@ const styles = StyleSheet.create({
   },
   chartCard: {
     marginBottom: SPACING.large,
+    borderRadius: 20,
+  },
+  chartCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: SPACING.medium,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0,0,0,0.05)',
+    paddingBottom: SPACING.medium,
   },
   chartTitle: {
     fontSize: FONT.sizes.large,
     fontWeight: "bold",
-    marginBottom: SPACING.medium,
     color: COLORS.text.primary,
   },
-  chart: {
-    marginVertical: SPACING.medium,
+  chartLegend: {
+    flexDirection: 'row',
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: SPACING.medium,
+  },
+  legendDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: COLORS.primary,
+    marginRight: SPACING.xs,
+  },
+  legendText: {
+    fontSize: FONT.sizes.small,
+    color: COLORS.text.secondary,
+  },
+  chartWrapper: {
+    backgroundColor: 'rgba(46, 125, 50, 0.03)',
     borderRadius: 16,
+    padding: SPACING.medium,
+    width: '100%',
+    ...(Platform.OS === "web" ? {
+      display: 'flex',
+      flexDirection: 'column',
+      justifyContent: 'center',
+      alignItems: 'center',
+    } : {}),
   },
-  navigationContainer: {
+  chartScrollContainer: {
+    width: '100%',
+    overflowX: 'auto',
+    overflowY: 'hidden',
+    marginBottom: SPACING.medium,
+    borderRadius: 12,
+    ...(Platform.OS === "web" ? {
+      backgroundColor: COLORS.white,
+      padding: SPACING.small,
+      ...SHADOWS.subtle,
+    } : {}),
+  },
+  chart: {
+    marginVertical: SPACING.small,
+    borderRadius: 16,
+    ...(Platform.OS === "web" ? {
+      minWidth: '100%',
+    } : {}),
+  },
+  chartInfo: {
+    width: '100%',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: SPACING.small,
+  },
+  chartInfoItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.8)',
+    paddingHorizontal: SPACING.medium,
+    paddingVertical: SPACING.small,
+    borderRadius: 20,
+    ...SHADOWS.subtle,
+  },
+  chartInfoText: {
+    fontSize: FONT.sizes.small,
+    color: COLORS.text.secondary,
+    marginLeft: SPACING.small,
+  },
+  tooltipContainer: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+  },
+  // New styles for grid layout
+  insightsCard: {
     marginBottom: SPACING.large,
+    borderRadius: 20,
+    height: '100%',
   },
-  navigationButton: {
+  insightItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: SPACING.large,
+    paddingBottom: SPACING.medium,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0,0,0,0.05)',
+  },
+  insightContent: {
+    marginLeft: SPACING.medium,
+    flex: 1,
+  },
+  insightTitle: {
+    fontSize: FONT.sizes.medium,
+    fontWeight: 'bold',
+    color: COLORS.text.primary,
+    marginBottom: SPACING.xs,
+  },
+  insightValue: {
+    fontSize: FONT.sizes.large,
+    fontWeight: 'bold',
+    color: COLORS.primary,
+    marginBottom: SPACING.xs,
+  },
+  insightDescription: {
+    fontSize: FONT.sizes.small,
+    color: COLORS.text.secondary,
+  },
+  statCard: {
+    padding: SPACING.large,
+    borderRadius: 16,
     marginBottom: SPACING.medium,
   },
+  statCardContent: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  statCardTitle: {
+    fontSize: FONT.sizes.medium,
+    color: COLORS.text.secondary,
+    marginTop: SPACING.medium,
+    marginBottom: SPACING.small,
+    textAlign: 'center',
+  },
+  statCardValue: {
+    fontSize: FONT.sizes.large,
+    fontWeight: 'bold',
+    color: COLORS.text.primary,
+    textAlign: 'center',
+  },
+  tooltipHint: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.9)',
+    paddingHorizontal: SPACING.small,
+    paddingVertical: SPACING.xs,
+    borderRadius: 12,
+    ...SHADOWS.subtle,
+  },
+  tooltipHintText: {
+    fontSize: FONT.sizes.xs,
+    color: COLORS.text.secondary,
+    marginLeft: SPACING.xs,
+  },
+  noDataIcon: {
+    marginBottom: SPACING.medium,
+  },
+  // Removed navigation container styles as they're no longer needed
   buttonIcon: {
     marginRight: SPACING.small,
   },
