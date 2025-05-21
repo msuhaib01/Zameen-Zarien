@@ -9,11 +9,19 @@ export const checkApiAvailability = async () => {
     });
     return { available: true, data: response.data };
   } catch (error) {
-    console.error("API availability check failed:", error);
+    console.error("API availability check failed. Full error object:", JSON.stringify(error, Object.getOwnPropertyNames(error)));
+    console.error("Error details - Message:", error.message, "Code:", error.code);
+    if (error.request) {
+      console.error("Error details - Request object present (indicates request was made):", error.request);
+    }
+    if (error.config) {
+      console.error("Error details - Config:", JSON.stringify(error.config));
+    }
+    
     return {
       available: false,
       error: error.message,
-      details: error.response ? error.response.data : "No response from server",
+      details: error.response ? error.response.data : "No response from server. Axios error code: " + (error.code || 'N/A'),
     };
   }
 };
