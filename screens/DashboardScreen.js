@@ -377,15 +377,31 @@ const DashboardScreen = ({ navigation }) => {
     // Calculate max data points based on screen width and date range
     const daysDiff = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
 
-    // Adjust max data points based on screen width for web
+    // Adjust max data points based on screen width
     let MAX_DATA_POINTS;
     if (isWebPlatform) {
-      // For web, show more points on wider screens
-      const basePoints = windowDimensions.width < 768 ? 15 : 30;
-      MAX_DATA_POINTS = daysDiff > 365 ? basePoints * 2 : basePoints;
+      const screenWidth = windowDimensions.width;
+      if (screenWidth < 500) {        // Very small screens
+        MAX_DATA_POINTS = 8;
+      } else if (screenWidth < 768) { // Small screens (e.g., Tailwind 'sm' to 'md')
+        MAX_DATA_POINTS = 12;
+      } else if (screenWidth < 1024) { // Medium screens (e.g., Tailwind 'md' to 'lg', tablets)
+        MAX_DATA_POINTS = 20;
+      } else if (screenWidth < 1280) { // Large screens (e.g., Tailwind 'lg' to 'xl', small desktops)
+        MAX_DATA_POINTS = 25;
+      } else {                         // Extra large screens (e.g., Tailwind 'xl' and up)
+        MAX_DATA_POINTS = 30;
+      }
+      // The previous logic that effectively increased MAX_DATA_POINTS for longer date ranges (daysDiff > 365)
+      // (e.g., basePoints * 2) has been removed, as it likely contributed to the "squished" look.
+      // Now, MAX_DATA_POINTS is primarily determined by the available screen width for better visual comfort.
     } else {
-      // For mobile, keep it more limited
-      MAX_DATA_POINTS = daysDiff > 365 ? 20 : 12;
+      // For mobile, also adjusted to be slightly more conservative with points.
+      if (daysDiff > 365) {
+        MAX_DATA_POINTS = 15; // Previously 20
+      } else {
+        MAX_DATA_POINTS = 10; // Previously 12
+      }
     }
 
     // Store original data for tooltips
@@ -457,6 +473,8 @@ const DashboardScreen = ({ navigation }) => {
     labelColor: (opacity = 1) => `rgba(33, 33, 33, ${opacity})`,
     style: {
       borderRadius: 16,
+      // Add some padding to the left of the chart to prevent y-axis labels from being cut off
+      paddingLeft: isWebPlatform ? SPACING.lg : SPACING.sm, // Adjust padding as needed
     },
     propsForDots: {
       r: "5",
@@ -475,6 +493,9 @@ const DashboardScreen = ({ navigation }) => {
       fontSize: isWebPlatform ? 12 : 10,
       fontWeight: "bold",
       fill: COLORS.text.secondary,
+      // Add a small x offset to push labels slightly to the right if needed,
+      // but usually paddingLeft on the chart style is better.
+      // dx: isWebPlatform ? 5 : 0, 
     },
     // Add tooltip configuration
     tooltipConfig: {

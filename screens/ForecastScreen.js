@@ -24,7 +24,7 @@ import Card from "../components/Card";
 import Button from "../components/Button";
 import Dropdown from "../components/Dropdown";
 import FilterSection from "../components/FilterSection";
-import { COLORS, FONT, SPACING, SHADOWS } from "../theme";
+import { COLORS, FONT, SPACING, SHADOWS } from "../theme"; // Ensure SPACING is used or imported if needed by chartWidth
 import { useApp } from "../context/AppContext";
 import {
   getForecast,
@@ -82,7 +82,7 @@ const validateDate = (dateString) => {
 
 const ForecastScreen = ({ navigation }) => {
   const { t } = useTranslation();
-  const { width: screenWidth } = useWindowDimensions(); // Add this line to get screen width
+  const { width: windowWidth } = useWindowDimensions();
   const {
     commodities,
     selectedCommodity,
@@ -114,6 +114,21 @@ const ForecastScreen = ({ navigation }) => {
   const [showStartDatePicker, setShowStartDatePicker] = useState(false);
   const [showEndDatePicker, setShowEndDatePicker] = useState(false);
   const [isWebPlatform] = useState(Platform.OS === "web");
+  const [chartWidth, setChartWidth] = useState(300); // State for chart width
+  // Initialize chart width
+  useEffect(() => {
+    let calculatedWidth;
+    if (isWebPlatform) {
+      // For web, we'll use onLayout to get the exact width later
+      // Just set an initial value that will be updated by onLayout event
+      const spacingLg = (SPACING && typeof SPACING.lg === 'number') ? SPACING.lg : 24;
+      calculatedWidth = Math.max(windowWidth - (spacingLg * 2 + 40), 300);
+    } else { // Mobile
+      calculatedWidth = windowWidth - 40;
+    }
+    setChartWidth(calculatedWidth);
+  }, [windowWidth, isWebPlatform]); // SPACING removed from dependency array as it's not needed
+
 
   // Commodity options
   const commodityOptions = commodities.map((commodity) => ({
@@ -131,14 +146,16 @@ const ForecastScreen = ({ navigation }) => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        await loadPriceData();
+        // Calculate initial forecastDays based on the default date range
+        const initialForecastDays = Math.max(1, Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)));
+        await loadPriceData(initialForecastDays);
       } catch (error) {
-        console.error("Error loading data:", error);
+        console.error("Error loading data on initial load or commodity/location change:", error);
       }
     };
 
     fetchData();
-  }, [selectedCommodity, selectedLocation, compareWithHistorical]);
+  }, [selectedCommodity, selectedLocation, compareWithHistorical]); // Removed startDate, endDate from here to avoid loop with loadPriceData
 
   // Handle date change
   const onStartDateChange = (event, selectedDate) => {
@@ -327,68 +344,188 @@ const ForecastScreen = ({ navigation }) => {
       setRefreshing(false);
     }
   };
+  // Format a date string as 'D Month YYYY' for tooltips
+  const formatFullDate = (dateStr) => {
+    const date = new Date(dateStr);
+    const monthNames = [
+      "January", "February", "March", "April", "May", "June",
+      "July", "August", "September", "October", "November", "December"
+    ];
+    return `${date.getDate()} ${monthNames[date.getMonth()]} ${date.getFullYear()}`;
+  };
 
   // Prepare chart data
   const getChartData = () => {
-    if (!priceData || !priceData.forecast) return null;
+    if (!priceData || !priceData.forecast || priceData.forecast.length === 0) {
+      return { labels: [t("common.noData") || "N/A"], datasets: [{ data: [0] }], legend: [t("forecast.predictedPrice")] };
+    }
 
-    // Calculate forecast days based on date range
-    const forecastDays = Math.ceil(
-      (endDate - startDate) / (1000 * 60 * 60 * 24)
-    );
+    let forecastItems = [...priceData.forecast];
+    
+    // Ensure endDate and startDate are valid Date objects before calculation
+    const validStartDate = startDate instanceof Date && !isNaN(startDate);
+    const validEndDate = endDate instanceof Date && !isNaN(endDate);
+    const forecastPeriodDays = (validStartDate && validEndDate) ? 
+      Math.max(1, Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24))) : 7; // Default to 7 days if dates are invalid
 
-    // Get forecast data based on selected days
-    const forecastData = priceData.forecast.slice(0, forecastDays);
+    // Calculate max data points based on screen width and date range
+    let MAX_DATA_POINTS;
+    if (isWebPlatform) {
+      const screenWidth = windowWidth;
+      if (screenWidth < 500) {        // Very small screens
+        MAX_DATA_POINTS = 8;
+      } else if (screenWidth < 768) { // Small screens (e.g., Tailwind 'sm' to 'md')
+        MAX_DATA_POINTS = 12;
+      } else if (screenWidth < 1024) { // Medium screens (e.g., Tailwind 'md' to 'lg', tablets)
+        MAX_DATA_POINTS = 20;
+      } else if (screenWidth < 1280) { // Large screens (e.g., Tailwind 'lg' to 'xl', small desktops)
+        MAX_DATA_POINTS = 25;
+      } else {                         // Extra large screens (e.g., Tailwind 'xl' and up)
+        MAX_DATA_POINTS = 30;
+      }
+    } else { // Mobile
+      if (forecastPeriodDays > 365) {
+        MAX_DATA_POINTS = 15;
+      } else {
+        MAX_DATA_POINTS = 10;
+      }
+    }
 
-    // Prepare datasets
-    const datasets = [
-      {
-        data: forecastData.map((item) => item.price),
-        color: (opacity = 1) => `rgba(0, 100, 0, ${opacity})`, // Dark green
-        strokeWidth: 2,
-      },
-    ];
+    // Store original data for tooltips
+    const originalData = [...forecastItems];
 
-    // Add historical data if enabled
-    if (compareWithHistorical && priceData.history) {
-      const historicalData = priceData.history.slice(-forecastDays);
-      datasets.push({
-        data: historicalData.map((item) => item.price),
-        color: (opacity = 1) => `rgba(139, 0, 0, ${opacity})`, // Dark red
-        strokeWidth: 2,
+    if (forecastItems.length > MAX_DATA_POINTS) {
+      // Sample the data to get a reasonable number of points
+      const step = Math.ceil(forecastItems.length / MAX_DATA_POINTS);
+      const sampledData = [];
+      for (let i = 0; i < forecastItems.length; i += step) {
+        sampledData.push(forecastItems[i]);
+      }
+      // Always include the last data point
+      if (sampledData[sampledData.length - 1] !== forecastItems[forecastItems.length - 1]) {
+        sampledData.push(forecastItems[forecastItems.length - 1]);
+      }
+      forecastItems = sampledData;
+    }
+
+    // Format the dates for display based on date range and data density
+    const formatChartDate = (dateStr, idx, arr) => {
+      const date = new Date(dateStr);
+      const monthNames = [
+        "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+      ];
+      
+      if (arr.length <= 15) {
+        // Show full date if few points
+        return `${date.getDate()} ${monthNames[date.getMonth()]}`;
+      } else if (arr.length <= 40) {
+        // Show month/day
+        return `${monthNames[date.getMonth()]}/${date.getDate()}`;
+      } else {
+        // Show only month for very dense data
+        return `${monthNames[date.getMonth()]}`;
+      }
+    };
+
+    // Add tooltips data
+    const tooltipData = forecastItems.map(item => ({
+      date: formatFullDate(item.date),
+      price: `PKR ${item.price}`,
+      rawDate: new Date(item.date)
+    }));
+    
+    const datasets = [{
+      data: forecastItems.map(item => Number(item.price) || 0),
+      color: (opacity = 1) => `rgba(46, 125, 50, ${opacity})`, // Green from Dashboard
+      strokeWidth: 3,
+    }];
+
+    if (compareWithHistorical && priceData.history && priceData.history.length > 0) {
+      const historicalDataPoints = forecastItems.map(fItem => {
+        const fDateStr = new Date(fItem.date).toDateString();
+        const historyMatch = priceData.history.find(hItem => new Date(hItem.date).toDateString() === fDateStr);
+        return historyMatch ? (Number(historyMatch.price) || 0) : null;
       });
+
+      if (historicalDataPoints.some(p => p !== null)) {
+        datasets.push({
+          data: historicalDataPoints,
+          color: (opacity = 1) => COLORS.accent ? (typeof COLORS.accent === 'function' ? COLORS.accent(opacity) : `rgba(${hexToRgb(COLORS.accent)}, ${opacity})`) : `rgba(139, 0, 0, ${opacity})`, // Accent or fallback red
+          strokeWidth: 3,
+        });
+      }
     }
 
     return {
-      labels: forecastData.map((item) => {
-        const date = new Date(item.date);
-        return `${date.getDate()}/${date.getMonth() + 1}`;
-      }),
+      labels: forecastItems.map((item, idx, arr) => formatChartDate(item.date, idx, arr)),
       datasets,
-      legend: [
+      legend: [ // This legend is for the chart component if it renders one
         t("forecast.predictedPrice"),
-        ...(compareWithHistorical ? [t("forecast.actualPrice")] : []),
+        ...(compareWithHistorical && datasets.length > 1 ? [t("forecast.actualPrice")] : []),
       ],
+      tooltipData: tooltipData,
+      originalData: originalData,
     };
   };
-
   // Chart configuration
   const chartConfig = {
     backgroundGradientFrom: COLORS.white,
     backgroundGradientTo: COLORS.white,
     decimalPlaces: 0,
-    color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-    labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+    color: (opacity = 1) => `rgba(46, 125, 50, ${opacity})`, // Dark green from Dashboard
+    labelColor: (opacity = 1) => `rgba(33, 33, 33, ${opacity})`, // Dark text from Dashboard
     style: {
       borderRadius: 16,
+      // Add some padding to the left of the chart to prevent y-axis labels from being cut off
+      paddingLeft: isWebPlatform ? 60 : SPACING.sm, // Increased padding for web to handle 5-digit numbers
     },
     propsForDots: {
-      r: "6",
+      r: "5", // Consistent with Dashboard
       strokeWidth: "2",
-      stroke: COLORS.primary,
+      stroke: COLORS.primaryDark, // Consistent with Dashboard
     },
+    propsForBackgroundLines: { // Added from Dashboard
+      strokeWidth: 1,
+      stroke: "#e0e0e0",
+      strokeDasharray: "5, 5",
+    },
+    propsForLabels: { 
+      fontSize: isWebPlatform ? 12 : 10,
+      fontWeight: "bold",
+      fill: COLORS.text.secondary,
+    },
+    tooltipConfig: { 
+      backgroundColor: 'rgba(255, 255, 255, 0.95)', // Consistent with Dashboard
+      borderRadius: 8,
+      borderColor: COLORS.border,
+      borderWidth: 1,
+      padding: 10,
+      textColor: COLORS.text.primary, // Added for consistency
+      titleColor: COLORS.primary,    // Added for consistency
+      titleFontSize: 14,            // Added for consistency
+      valueFontSize: 16,            // Added for consistency
+      // Removed labelColor and valueColor as textColor and specific title/value styles are used
+      ...SHADOWS.small,
+    },
+    withLegend: false, // Disable built-in legend as there's a custom one
   };
 
+  // Helper function to convert hex to rgb (if not already global)
+  const hexToRgb = (hex) => {
+    let r = 0, g = 0, b = 0;
+    if (!hex || typeof hex !== 'string') return '0,0,0'; // Fallback for invalid hex
+    const shorthandRegex = /^#?([a-f\\d])([a-f\\d])([a-f\\d])$/i;
+    hex = hex.replace(shorthandRegex, (m, r1, g1, b1) => r1 + r1 + g1 + g1 + b1 + b1);
+    const result = /^#?([a-f\\d]{2})([a-f\\d]{2})([a-f\\d]{2})$/i.exec(hex);
+    if (result) {
+      r = parseInt(result[1], 16);
+      g = parseInt(result[2], 16);
+      b = parseInt(result[3], 16);
+    }
+    return `${r},${g},${b}`;
+  };
+  
   // Render content function for reuse between web and mobile
   const renderContent = () => (
     <>
@@ -406,6 +543,10 @@ const ForecastScreen = ({ navigation }) => {
   );
 
   // Return different layouts based on platform
+
+  // Store chart data in a variable to call getChartData() only once per render
+  const chartDisplayData = getChartData();
+
   return isWebPlatform ? (
     <WebLayout
       title={t("forecast.title")}
@@ -562,15 +703,140 @@ const ForecastScreen = ({ navigation }) => {
               <Text style={styles.messageText}>{priceData.message}</Text>
             )}
 
-            {getChartData() && (
-              <LineChart
-                data={getChartData()}
-                width={screenWidth - 40}
-                height={220}
-                chartConfig={chartConfig}
-                bezier
-                style={styles.chart}
-              />
+            {chartDisplayData && chartDisplayData.labels && chartDisplayData.labels.length > 0 && chartDisplayData.datasets[0] && chartDisplayData.datasets[0].data.length > 0 && chartDisplayData.labels[0] !== (t("common.noData") || "N/A") ? (
+              isWebPlatform ? (
+                <View
+                  style={[styles.chartWrapper, { width: '100%' }]} // Ensure wrapper takes full width for onLayout
+                  onLayout={(event) => {
+                    const { width } = event.nativeEvent.layout;
+                    // Only update if width is valid and has changed to prevent infinite loops
+                    if (width > 0 && width !== chartWidth) {
+                      setChartWidth(width);
+                    }
+                  }}
+                >
+                  {chartWidth > 0 ? (
+                    <LineChart
+                      data={chartDisplayData}
+                      width={chartWidth} // Use measured width
+                      height={250} // Fixed height for web
+                      chartConfig={{
+                        ...chartConfig,
+                        // Ensure color function is correctly defined for template literal
+                        color: (opacity = 1) => `rgba(46, 125, 50, ${opacity})`,
+                        propsForDots: {
+                          r: "5",
+                          strokeWidth: "2",
+                          stroke: COLORS.primaryDark,
+                        },
+                        strokeWidth: 3,
+                      }}
+                      bezier
+                      style={styles.chart} // Basic style, width is handled by prop
+                      yAxisSuffix=" PKR"
+                      yAxisInterval={1}
+                      fromZero={false}
+                      withDots={true}
+                      withInnerLines={true}
+                      withOuterLines={true}
+                      withVerticalLines={true}
+                      withHorizontalLines={true}
+                      withVerticalLabels={true}
+                      withHorizontalLabels={true}
+                      horizontalLabelRotation={0}
+                      paddingLeft={60} // Increase left padding to fix cut-off issue with 5-digit numbers
+                      decorator={() => (
+                        <View style={styles.tooltipContainer}>
+                          {isWebPlatform && (
+                            <View style={styles.tooltipHint}>
+                              <Ionicons name="information-circle-outline" size={16} color={COLORS.info || COLORS.primary} />
+                              <Text style={styles.tooltipHintText}>
+                                {t("dashboard.hoverForDetails") || "Hover for details"}
+                              </Text>
+                            </View>
+                          )}
+                        </View>
+                      )}
+                      onDataPointClick={({ value, index }) => {
+                        if (chartDisplayData.tooltipData && chartDisplayData.tooltipData[index]) {
+                          const tooltipItem = chartDisplayData.tooltipData[index];
+                          // Show tooltip data in alert
+                          alert(`${tooltipItem.date}\n${tooltipItem.price}`);
+                        }
+                      }}
+                    />
+                  ) : (
+                    // Show a loader or placeholder while width is being measured
+                    <View style={{ height: 250, justifyContent: 'center', alignItems: 'center' }}>
+                      <ActivityIndicator size="large" color={COLORS.primary} />
+                    </View>
+                  )}
+                </View>
+              ) : (
+                // Mobile platform
+                <View style={styles.chartWrapper}>
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={{ 
+                      minWidth: chartDisplayData.labels && chartDisplayData.labels.length > 0 
+                                ? Math.max(windowWidth - 40, chartDisplayData.labels.length * 40) 
+                                : windowWidth - 40 
+                    }}
+                    style={{ width: '100%' }}
+                  >
+                    <LineChart
+                      data={chartDisplayData}
+                      width={
+                        chartDisplayData.labels && chartDisplayData.labels.length > 0
+                          ? Math.max(windowWidth - 40, chartDisplayData.labels.length * 40)
+                          : windowWidth - 40
+                      }
+                      height={220} // Mobile height
+                      chartConfig={{
+                        ...chartConfig,
+                        color: (opacity = 1) => `rgba(46, 125, 50, ${opacity})`,
+                        propsForDots: {
+                          r: "5",
+                          strokeWidth: "2",
+                          stroke: COLORS.primaryDark,
+                        },
+                        strokeWidth: 3,
+                      }}
+                      bezier
+                      style={[
+                        styles.chart, 
+                        { 
+                          minWidth: chartDisplayData.labels && chartDisplayData.labels.length > 0 
+                                    ? Math.max(windowWidth - 40, chartDisplayData.labels.length * 40) 
+                                    : windowWidth - 40 
+                        }
+                      ]}
+                      yAxisSuffix=" PKR"
+                      yAxisInterval={1}
+                      fromZero={false}
+                      withDots={true}
+                      withInnerLines={true}
+                      withOuterLines={true}
+                      withVerticalLines={true}
+                      withHorizontalLines={true}
+                      withVerticalLabels={true}
+                      withHorizontalLabels={true}
+                      horizontalLabelRotation={30} // Mobile rotation
+                      onDataPointClick={({ value, index }) => {
+                        if (chartDisplayData.tooltipData && chartDisplayData.tooltipData[index]) {
+                          const tooltipItem = chartDisplayData.tooltipData[index];
+                          alert(`${tooltipItem.date}\n${tooltipItem.price}`);
+                        }
+                      }}
+                    />
+                  </ScrollView>
+                </View>
+              )
+            ) : (
+              <View style={{height: 220, justifyContent: 'center', alignItems: 'center', ...styles.chart}}>
+                <Text>{chartDisplayData && chartDisplayData.labels ? chartDisplayData.labels[0] : (t("common.loading") || "Loading...")}</Text>
+              </View>
             )}
 
             <View style={styles.legendContainer}>
@@ -815,23 +1081,75 @@ const ForecastScreen = ({ navigation }) => {
                   </Text>
                 </TouchableOpacity>
               </View>
-            </Card>
-
-            <Card style={styles.chartCard}>
+            </Card>            <Card style={styles.chartCard}>
               <Text style={styles.chartTitle}>{"AI Model Prediction"}</Text>
               {priceData.message && (
                 <Text style={styles.messageText}>{priceData.message}</Text>
               )}
 
-              {getChartData() && (
-                <LineChart
-                  data={getChartData()}
-                  width={screenWidth - 40}
-                  height={220}
-                  chartConfig={chartConfig}
-                  bezier
-                  style={styles.chart}
-                />
+              {chartDisplayData && chartDisplayData.labels && chartDisplayData.labels.length > 0 && chartDisplayData.datasets[0] && chartDisplayData.datasets[0].data.length > 0 && chartDisplayData.labels[0] !== (t("common.noData") || "N/A") ? (
+                <View style={styles.chartWrapper}>
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={{ 
+                      minWidth: chartDisplayData.labels && chartDisplayData.labels.length > 0 
+                                ? Math.max(windowWidth - 40, chartDisplayData.labels.length * 40) 
+                                : windowWidth - 40 
+                    }}
+                    style={{ width: '100%' }}
+                  >
+                    <LineChart
+                      data={chartDisplayData}
+                      width={
+                        chartDisplayData.labels && chartDisplayData.labels.length > 0
+                          ? Math.max(windowWidth - 40, chartDisplayData.labels.length * 40)
+                          : windowWidth - 40
+                      }
+                      height={220}
+                      chartConfig={{
+                        ...chartConfig,
+                        color: (opacity = 1) => `rgba(46, 125, 50, ${opacity})`,
+                        propsForDots: {
+                          r: "5",
+                          strokeWidth: "2",
+                          stroke: COLORS.primaryDark,
+                        },
+                        strokeWidth: 3,
+                      }}
+                      bezier
+                      style={[
+                        styles.chart, 
+                        { 
+                          minWidth: chartDisplayData.labels && chartDisplayData.labels.length > 0 
+                                    ? Math.max(windowWidth - 40, chartDisplayData.labels.length * 40) 
+                                    : windowWidth - 40 
+                        }
+                      ]}
+                      yAxisSuffix=" PKR"
+                      yAxisInterval={1}
+                      fromZero={false}
+                      withDots={true}
+                      withInnerLines={true}
+                      withOuterLines={true}
+                      withVerticalLines={true}
+                      withHorizontalLines={true}
+                      withVerticalLabels={true}
+                      withHorizontalLabels={true}
+                      horizontalLabelRotation={30}
+                      onDataPointClick={({ value, index }) => {
+                        if (chartDisplayData.tooltipData && chartDisplayData.tooltipData[index]) {
+                          const tooltipItem = chartDisplayData.tooltipData[index];
+                          alert(`${tooltipItem.date}\n${tooltipItem.price}`);
+                        }
+                      }}
+                    />
+                  </ScrollView>
+                </View>
+              ) : (
+                <View style={{height: 220, justifyContent: 'center', alignItems: 'center', ...styles.chart}}>
+                  <Text>{chartDisplayData && chartDisplayData.labels ? chartDisplayData.labels[0] : (t("common.loading") || "Loading...")}</Text>
+                </View>
               )}
 
               <View style={styles.legendContainer}>
@@ -1031,6 +1349,11 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.medium,
     fontStyle: "italic",
   },
+  chartWrapper: {
+    marginVertical: SPACING.medium,
+    width: '100%',
+    position: 'relative',
+  },
   chart: {
     marginVertical: SPACING.medium,
     borderRadius: 16,
@@ -1055,6 +1378,26 @@ const styles = StyleSheet.create({
   legendText: {
     fontSize: FONT.sizes.small,
     color: COLORS.text.secondary,
+  },
+  tooltipContainer: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+  },
+  tooltipHint: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  tooltipHintText: {
+    fontSize: 12,
+    color: COLORS.text.secondary,
+    marginLeft: 4,
   },
   forecastDetailsCard: {
     backgroundColor: COLORS.white,
