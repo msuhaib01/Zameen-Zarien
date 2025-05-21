@@ -483,13 +483,13 @@ const styles = StyleSheet.create({
     width: "20%",
   },
   commodityCell: {
-    width: "30%",
+    width: "35%", // Increased from 30%
   },
   priceCell: {
-    width: "20%",
+    width: "15%", // Decreased from 20%
   },
   changeCell: {
-    width: "10%",
+    width: "15%", // Increased from 10%
   },
   // Price change colors
   positive: {
