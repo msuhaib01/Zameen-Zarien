@@ -320,7 +320,14 @@ const DashboardScreen = ({ navigation }) => {
 
   // Format date for display
   const formatDate = (date) => {
+    if (!date) return ""; // Ensure date is not null or undefined
     return `${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`;
+  };
+
+  // Format date for display on mobile (D/M/YY)
+  const formatMobileDate = (date) => {
+    if (!date) return ""; // Ensure date is not null or undefined
+    return `${date.getDate()}/${date.getMonth() + 1}/${String(date.getFullYear()).slice(-2)}`;
   };
 
   // Handle refresh
@@ -641,8 +648,13 @@ const DashboardScreen = ({ navigation }) => {
                   : locations.find((l) => l.id === selectedLocation)?.name_ur}
               </Text>
 
-              <Text style={styles.dateRangeInfo}>
-                {formatDate(startDate)} - {formatDate(endDate)}
+              <Text
+                style={styles.dateRangeInfo}
+                numberOfLines={1}
+                adjustsFontSizeToFit={!isWebPlatform}
+                ellipsizeMode="tail"
+              >
+                {isWebPlatform ? formatDate(startDate) : formatMobileDate(startDate)} - {isWebPlatform ? formatDate(endDate) : formatMobileDate(endDate)}
               </Text>
             </View>
 
