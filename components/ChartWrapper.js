@@ -105,7 +105,11 @@ const ChartWrapper = ({
     // Configure chart based on platform
     const platformChartConfig = {
       ...chartConfig,
-      // Android-specific optimizations
+      // Platform-specific optimizations
+      style: {
+        ...chartConfig?.style,
+        paddingLeft: Platform.OS === 'web' ? 80 : 40, // Ensure enough padding for digits on y-axis
+      },
       propsForLabels: Platform.OS === 'android' ? {
         fontSize: FONT.sizes.xs,
       } : chartConfig.propsForLabels,
@@ -165,8 +169,7 @@ const ChartWrapper = ({
   return null;
 };
 
-const styles = StyleSheet.create({
-  container: {
+const styles = StyleSheet.create({  container: {
     height: 220,
     justifyContent: 'center',
     alignItems: 'center',
@@ -183,6 +186,7 @@ const styles = StyleSheet.create({
   },
   chart: {
     borderRadius: 16,
+    paddingLeft: Platform.OS === 'web' ? 80 : 40, // Increased padding to prevent digits from being cut off
     ...(Platform.OS === 'android' ? { marginLeft: -10 } : {}), // Fix alignment issues on Android
   },
   noDataText: {

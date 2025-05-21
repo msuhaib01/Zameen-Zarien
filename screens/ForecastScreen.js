@@ -467,8 +467,7 @@ const ForecastScreen = ({ navigation }) => {
       tooltipData: tooltipData,
       originalData: originalData,
     };
-  };
-  // Chart configuration
+  };  // Chart configuration
   const chartConfig = {
     backgroundGradientFrom: COLORS.white,
     backgroundGradientTo: COLORS.white,
@@ -478,8 +477,10 @@ const ForecastScreen = ({ navigation }) => {
     style: {
       borderRadius: 16,
       // Add some padding to the left of the chart to prevent y-axis labels from being cut off
-      paddingLeft: isWebPlatform ? 60 : SPACING.sm, // Increased padding for web to handle 5-digit numbers
+      paddingLeft: isWebPlatform ? 80 : 40, // Increased padding for both web and mobile to prevent digit cutoff
     },
+    // Add left margin to y-axis labels to prevent first digit from being cut off
+    yAxisLabelOffset: 10,
     propsForDots: {
       r: "5", // Consistent with Dashboard
       strokeWidth: "2",
@@ -489,11 +490,11 @@ const ForecastScreen = ({ navigation }) => {
       strokeWidth: 1,
       stroke: "#e0e0e0",
       strokeDasharray: "5, 5",
-    },
-    propsForLabels: { 
+    },    propsForLabels: { 
       fontSize: isWebPlatform ? 12 : 10,
       fontWeight: "bold",
       fill: COLORS.text.secondary,
+      dx: 5, // Add horizontal offset to labels to prevent cutoff
     },
     tooltipConfig: { 
       backgroundColor: 'rgba(255, 255, 255, 0.95)', // Consistent with Dashboard
@@ -741,10 +742,10 @@ const ForecastScreen = ({ navigation }) => {
                       withOuterLines={true}
                       withVerticalLines={true}
                       withHorizontalLines={true}
-                      withVerticalLabels={true}
-                      withHorizontalLabels={true}
+                      withVerticalLabels={true}                      withHorizontalLabels={true}
                       horizontalLabelRotation={0}
-                      paddingLeft={60} // Increase left padding to fix cut-off issue with 5-digit numbers
+                      paddingLeft={80} // Increased padding to fix cut-off issue with digits
+                      yLabelsOffset={10} // Add offset to y-axis labels to prevent first digit cutoff
                       decorator={() => (
                         <View style={styles.tooltipContainer}>
                           {isWebPlatform && (
@@ -820,9 +821,10 @@ const ForecastScreen = ({ navigation }) => {
                       withOuterLines={true}
                       withVerticalLines={true}
                       withHorizontalLines={true}
-                      withVerticalLabels={true}
-                      withHorizontalLabels={true}
+                      withVerticalLabels={true}                      withHorizontalLabels={true}
                       horizontalLabelRotation={30} // Mobile rotation
+                      paddingLeft={40} // Added left padding for mobile to prevent digit cutoff
+                      yLabelsOffset={10} // Add offset to y-axis labels to prevent first digit cutoff
                       onDataPointClick={({ value, index }) => {
                         if (chartDisplayData.tooltipData && chartDisplayData.tooltipData[index]) {
                           const tooltipItem = chartDisplayData.tooltipData[index];

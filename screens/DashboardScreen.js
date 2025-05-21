@@ -470,12 +470,13 @@ const DashboardScreen = ({ navigation }) => {
     backgroundGradientTo: COLORS.white,
     decimalPlaces: 0,
     color: (opacity = 1) => `rgba(46, 125, 50, ${opacity})`, // Dark green color
-    labelColor: (opacity = 1) => `rgba(33, 33, 33, ${opacity})`,
-    style: {
+    labelColor: (opacity = 1) => `rgba(33, 33, 33, ${opacity})`,    style: {
       borderRadius: 16,
       // Add some padding to the left of the chart to prevent y-axis labels from being cut off
-      paddingLeft: isWebPlatform ? SPACING.lg : SPACING.sm, // Adjust padding as needed
+      paddingLeft: isWebPlatform ? 80 : 40, // Increased padding for both web and mobile to prevent digit cutoff
     },
+    // Add left margin to y-axis labels to prevent first digit from being cut off
+    yAxisLabelOffset: 10,
     propsForDots: {
       r: "5",
       strokeWidth: "2",
@@ -488,14 +489,12 @@ const DashboardScreen = ({ navigation }) => {
       strokeWidth: 1,
       stroke: "#e0e0e0",
       strokeDasharray: "5, 5",
-    },
-    propsForLabels: {
+    },    propsForLabels: {
       fontSize: isWebPlatform ? 12 : 10,
       fontWeight: "bold",
       fill: COLORS.text.secondary,
-      // Add a small x offset to push labels slightly to the right if needed,
-      // but usually paddingLeft on the chart style is better.
-      // dx: isWebPlatform ? 5 : 0, 
+      // Add a small x offset to push labels slightly to the right to prevent cutoff
+      dx: 5, 
     },
     // Add tooltip configuration
     tooltipConfig: {
@@ -760,8 +759,7 @@ const DashboardScreen = ({ navigation }) => {
                     }
                   }}
                 >
-                  {measuredChartWrapperWidth > 0 ? (
-                    <LineChart
+                  {measuredChartWrapperWidth > 0 ? (                    <LineChart
                       data={chartDisplayData}
                       width={measuredChartWrapperWidth} // Use measured width
                       height={250} // Fixed height for web
@@ -780,15 +778,16 @@ const DashboardScreen = ({ navigation }) => {
                       style={styles.chart} // Basic style, width is handled by prop
                       yAxisSuffix=" PKR"
                       yAxisInterval={1}
+                      yLabelsOffset={10} // Add offset to y-axis labels to prevent first digit cutoff
                       fromZero={false}
                       withDots={true}
                       withInnerLines={true}
                       withOuterLines={true}
                       withVerticalLines={true}
-                      withHorizontalLines={true}
-                      withVerticalLabels={true}
+                      withHorizontalLines={true}                      withVerticalLabels={true}
                       withHorizontalLabels={true}
                       horizontalLabelRotation={0}
+                      paddingLeft={80} // Added explicit padding to prevent digit cutoff
                       decorator={() => (
                         <View style={styles.tooltipContainer}>
                           {isWebPlatform && ( // This will be true for web
@@ -862,18 +861,18 @@ const DashboardScreen = ({ navigation }) => {
                                     ? Math.max(windowDimensions.width - 40, chartDisplayData.labels.length * 40) 
                                     : windowDimensions.width - 40 
                         }
-                      ]}
-                      yAxisSuffix=" PKR"
+                      ]}                      yAxisSuffix=" PKR"
                       yAxisInterval={1}
                       fromZero={false}
                       withDots={true}
                       withInnerLines={true}
                       withOuterLines={true}
                       withVerticalLines={true}
+                      yLabelsOffset={10} // Add offset to y-axis labels to prevent first digit cutoff
                       withHorizontalLines={true}
-                      withVerticalLabels={true}
-                      withHorizontalLabels={true}
+                      withVerticalLabels={true}                      withHorizontalLabels={true}
                       horizontalLabelRotation={30} // Mobile rotation
+                      paddingLeft={40} // Added explicit padding to prevent digit cutoff
                       decorator={() => (
                         <View style={styles.tooltipContainer}>
                           {/* Hint is not shown on mobile as isWebPlatform will be false */}
