@@ -373,185 +373,34 @@ const AlertsScreen = ({ navigation }) => {
   );
 
   // Return different layouts based on platform
-  return isWebPlatform ? (
-    <WebLayout
-      title={t("alerts.title")}
-      currentScreen="Alerts"
-      navigation={navigation}
-    >
-      {renderContent()}
-    </WebLayout>
-  ) : (
-    <SafeAreaView style={styles.container}>
-      <Header title={t("alerts.title")} showBackButton={true} />
+  return (
+    <>
+      {isWebPlatform ? (
+        <WebLayout
+          title={t("alerts.title")}
+          currentScreen="Alerts"
+          navigation={navigation}
+        >
+          {renderContent()}
+        </WebLayout>
+      ) : (
+        <SafeAreaView style={styles.container}>
+          <Header title={t("alerts.title")} showBackButton={true} />
 
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-      >
-        <Button
-          title={t("alerts.addAlert")}
-          onPress={openAddModal}
-          type="primary"
-          icon={
-            <Ionicons
-              name="add-circle-outline"
-              size={18}
-              color={COLORS.white}
-              style={styles.buttonIcon}
-            />
-          }
-          style={styles.addButton}
-        />
+          <ScrollView
+            style={styles.scrollView}
+            contentContainerStyle={styles.scrollContent}
+            refreshControl={
+              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+            }
+          >
+            {/* Use renderContent for mobile as well */}
+            {renderContent()}
+          </ScrollView>
+        </SafeAreaView>
+      )}
 
-        {alerts.length > 0 ? (
-          <View style={styles.alertsContainer}>
-            {alerts.map((alert) => (
-              <Card key={alert.id} style={styles.alertCard}>
-                <View style={styles.alertHeader}>
-                  <Text style={styles.alertTitle}>
-                    {getCommodityName(alert.commodityId)}
-                  </Text>
-                  <View style={styles.alertActions}>
-                    <TouchableOpacity
-                      style={styles.alertAction}
-                      onPress={() => openHistoryModal(alert)}
-                    >
-                      <Ionicons
-                        name="time-outline"
-                        size={20}
-                        color={COLORS.primary}
-                      />
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={styles.alertAction}
-                      onPress={() => openEditModal(alert)}
-                    >
-                      <Ionicons
-                        name="create-outline"
-                        size={20}
-                        color={COLORS.primary}
-                      />
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={styles.alertAction}
-                      onPress={() => handleDeleteAlert(alert.id)}
-                    >
-                      <Ionicons
-                        name="trash-outline"
-                        size={20}
-                        color={COLORS.accent}
-                      />
-                    </TouchableOpacity>
-                  </View>
-                </View>
-
-                <View style={styles.alertContent}>
-                  <View style={styles.alertInfo}>
-                    <Text style={styles.alertInfoLabel}>
-                      {t("alerts.condition")}:
-                    </Text>
-                    <Text style={styles.alertInfoValue}>
-                      {alert.condition === "above"
-                        ? t("alerts.above")
-                        : t("alerts.below")}{" "}
-                      PKR {alert.threshold}
-                    </Text>
-                  </View>
-
-                  <View style={styles.alertInfo}>
-                    <Text style={styles.alertInfoLabel}>
-                      {t("alerts.currentPrice")}:
-                    </Text>
-                    <Text style={styles.alertInfoValue}>
-                      PKR {getCurrentPrice(alert.commodityId)}
-                    </Text>
-                  </View>
-
-                  <View style={styles.alertInfo}>
-                    <Text style={styles.alertInfoLabel}>
-                      {t("alerts.notificationMethods")}:
-                    </Text>
-                    <View style={styles.notificationMethodsWrapper}>
-                      <View style={styles.notificationMethodsContainer}>
-                        {alert.notificationMethods.push && (
-                          <View style={styles.notificationMethod}>
-                            <Ionicons
-                              name="notifications"
-                              size={16}
-                              color={COLORS.primary}
-                            />
-                            <Text style={styles.notificationMethodText}>
-                              {t("alerts.push")}
-                            </Text>
-                          </View>
-                        )}
-                        {alert.notificationMethods.sms && (
-                          <View style={styles.notificationMethod}>
-                            <Ionicons
-                              name="chatbubble"
-                              size={16}
-                              color={COLORS.primary}
-                            />
-                            <Text style={styles.notificationMethodText}>
-                              {t("alerts.sms")}
-                            </Text>
-                          </View>
-                        )}
-                        {alert.notificationMethods.email && (
-                          <View style={styles.notificationMethod}>
-                            <Ionicons
-                              name="mail"
-                              size={16}
-                              color={COLORS.primary}
-                            />
-                            <Text style={styles.notificationMethodText}>
-                              {t("alerts.email")}
-                            </Text>
-                          </View>
-                        )}
-                      </View>
-                    </View>
-                  </View>
-                </View>
-
-                <View style={styles.alertFooter}>
-                  <Text style={styles.alertStatus}>
-                    {alert.enabled ? t("alerts.enabled") : t("alerts.disabled")}
-                  </Text>
-                  <Switch
-                    value={alert.enabled}
-                    onValueChange={() =>
-                      toggleAlertEnabled(alert.id, alert.enabled)
-                    }
-                    trackColor={{
-                      false: COLORS.lightGray,
-                      true: COLORS.primary,
-                    }}
-                    thumbColor={COLORS.white}
-                  />
-                </View>
-              </Card>
-            ))}
-          </View>
-        ) : (
-          <View style={styles.emptyContainer}>
-            <Ionicons
-              name="notifications-off-outline"
-              size={64}
-              color={COLORS.gray}
-            />
-            <Text style={styles.emptyText}>{t("alerts.noAlerts")}</Text>
-            <Text style={styles.emptySubtext}>
-              {t("alerts.addAlertPrompt")}
-            </Text>
-          </View>
-        )}
-      </ScrollView>
-
+      {/* Modals are now outside the platform-specific logic, available to both */}
       <Modal visible={showAddModal} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
@@ -760,7 +609,7 @@ const AlertsScreen = ({ navigation }) => {
           </View>
         </View>
       </Modal>
-    </SafeAreaView>
+    </>
   );
 };
 
