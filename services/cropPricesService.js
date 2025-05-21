@@ -5,7 +5,7 @@ import { API_BASE_URL } from "../config";
 export const checkApiAvailability = async () => {
   try {
     const response = await axios.get(`${API_BASE_URL}/api/test-connection/`, {
-      timeout: 5000,
+      timeout: 15000, // Increased timeout to 15 seconds for testing
     });
     return { available: true, data: response.data };
   } catch (error) {
