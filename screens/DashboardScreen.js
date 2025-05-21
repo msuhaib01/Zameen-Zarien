@@ -17,7 +17,6 @@ import {
 import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 import { LineChart } from "react-native-chart-kit";
-import { Dimensions } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 
 import Header from "../components/Header";
@@ -89,6 +88,7 @@ const DashboardScreen = ({ navigation }) => {
   const [endDateInput, setEndDateInput] = useState(formatDateForInput(endDate));
   const [isWebPlatform] = useState(Platform.OS === "web");
   const windowDimensions = useWindowDimensions();
+  const [measuredChartWrapperWidth, setMeasuredChartWrapperWidth] = useState(0);
 
   // Date validation function
   const validateDate = (dateString) => {
@@ -349,6 +349,16 @@ const DashboardScreen = ({ navigation }) => {
     }
   };
 
+  // Format a date string as 'D Month YYYY' for tooltips
+  const formatFullDate = (dateStr) => {
+    const date = new Date(dateStr);
+    const monthNames = [
+      "January", "February", "March", "April", "May", "June",
+      "July", "August", "September", "October", "November", "December"
+    ];
+    return `${date.getDate()} ${monthNames[date.getMonth()]} ${date.getFullYear()}`;
+  };
+
   // Prepare chart data
   const getChartData = () => {
     if (!priceData || !priceData.history || priceData.history.length === 0)
@@ -363,7 +373,7 @@ const DashboardScreen = ({ navigation }) => {
     // Adjust max data points based on screen width for web
     let MAX_DATA_POINTS;
     if (isWebPlatform) {
-      // For web, we can show more data points on wider screens
+      // For web, show more points on wider screens
       const basePoints = windowDimensions.width < 768 ? 15 : 30;
       MAX_DATA_POINTS = daysDiff > 365 ? basePoints * 2 : basePoints;
     } else {
@@ -378,55 +388,35 @@ const DashboardScreen = ({ navigation }) => {
       // Sample the data to get a reasonable number of points
       const step = Math.ceil(chartData.length / MAX_DATA_POINTS);
       const sampledData = [];
-
       for (let i = 0; i < chartData.length; i += step) {
         sampledData.push(chartData[i]);
       }
-
       // Always include the last data point
       if (
         sampledData[sampledData.length - 1] !== chartData[chartData.length - 1]
       ) {
         sampledData.push(chartData[chartData.length - 1]);
       }
-
       chartData = sampledData;
     }
 
-    // Format the dates for display based on date range
-    const formatChartDate = (dateStr) => {
+    // Format the dates for display based on date range and data density
+    const formatChartDate = (dateStr, idx, arr) => {
       const date = new Date(dateStr);
       const monthNames = [
         "Jan", "Feb", "Mar", "Apr", "May", "Jun",
         "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
       ];
-
-      // Calculate the date range span in days
-      const daysDiff = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
-
-      if (daysDiff > 365) {
-        // For long ranges (> 1 year), show month/year (e.g., "Jan/21")
-        return `${monthNames[date.getMonth()]}/${date
-          .getFullYear()
-          .toString()
-          .substr(2, 2)}`;
-      } else if (daysDiff > 60) {
-        // For medium ranges (2-12 months), show month/day (e.g., "Jan/15")
+      if (arr.length <= 15) {
+        // Show full date if few points
+        return `${date.getDate()} ${monthNames[date.getMonth()]}`;
+      } else if (arr.length <= 40) {
+        // Show month/day
         return `${monthNames[date.getMonth()]}/${date.getDate()}`;
       } else {
-        // For short ranges (< 60 days), show day/month (e.g., "15/4")
-        return `${date.getDate()}/${date.getMonth() + 1}`;
+        // Show only month or year for very dense data
+        return `${monthNames[date.getMonth()]}`;
       }
-    };
-
-    // Format the full date for tooltips
-    const formatFullDate = (dateStr) => {
-      const date = new Date(dateStr);
-      const monthNames = [
-        "January", "February", "March", "April", "May", "June",
-        "July", "August", "September", "October", "November", "December"
-      ];
-      return `${date.getDate()} ${monthNames[date.getMonth()]} ${date.getFullYear()}`;
     };
 
     // Add tooltips data
@@ -437,7 +427,7 @@ const DashboardScreen = ({ navigation }) => {
     }));
 
     return {
-      labels: chartData.map((item) => formatChartDate(item.date)),
+      labels: chartData.map((item, idx, arr) => formatChartDate(item.date, idx, arr)),
       datasets: [
         {
           data: chartData.map((item) => item.price),
@@ -446,9 +436,7 @@ const DashboardScreen = ({ navigation }) => {
         },
       ],
       legend: [t("dashboard.priceHistory")],
-      // Add tooltip data
       tooltipData: tooltipData,
-      // Add original data for reference
       originalData: originalData,
     };
   };
@@ -497,7 +485,10 @@ const DashboardScreen = ({ navigation }) => {
   };
 
   // Determine the content to render
-  const renderContent = () => (
+  const renderContent = () => {
+    const chartDisplayData = getChartData(); // Calculate chart data once
+
+    return (
     <>
       <FilterSection
         commodityOptions={commodityOptions}
@@ -724,50 +715,50 @@ const DashboardScreen = ({ navigation }) => {
               </View>
             </View>
 
-            {getChartData() ? (
-              <View style={styles.chartWrapper}>
-                {/* Chart container with horizontal scroll for many data points */}
-                <View style={styles.chartScrollContainer}>
-                  <LineChart
-                    data={getChartData()}
-                    width={
-                      isWebPlatform
-                        ? Math.max(
-                            // Ensure minimum width based on data points
-                            Math.min(windowDimensions.width - 80, 1200),
-                            // Add more width for many data points
-                            getChartData().labels.length * 20
-                          )
-                        : Math.max(windowDimensions.width - 40, getChartData().labels.length * 15)
+            {chartDisplayData ? (
+              isWebPlatform ? (
+                <View
+                  style={[styles.chartWrapper, { width: '100%' }]} // Ensure wrapper takes full width for onLayout
+                  onLayout={(event) => {
+                    const { width } = event.nativeEvent.layout;
+                    // Only update if width is valid and has changed to prevent infinite loops
+                    if (width > 0 && width !== measuredChartWrapperWidth) {
+                      setMeasuredChartWrapperWidth(width);
                     }
-                    height={isWebPlatform ? 250 : 220}
-                    chartConfig={{
-                      ...chartConfig,
-                      color: (opacity = 1) => `rgba(46, 125, 50, ${opacity})`,
-                      propsForDots: {
-                        r: "5",
-                        strokeWidth: "2",
-                        stroke: COLORS.primaryDark,
-                      },
-                      strokeWidth: 3,
-                    }}
-                    bezier
-                    style={styles.chart}
-                    yAxisSuffix=" PKR"
-                    yAxisInterval={1}
-                    fromZero={false}
-                    withDots={true}
-                    withInnerLines={true}
-                    withOuterLines={true}
-                    withVerticalLines={true}
-                    withHorizontalLines={true}
-                    withVerticalLabels={true}
-                    withHorizontalLabels={true}
-                    horizontalLabelRotation={isWebPlatform ? 0 : 30}
-                    decorator={() => {
-                      return (
+                  }}
+                >
+                  {measuredChartWrapperWidth > 0 ? (
+                    <LineChart
+                      data={chartDisplayData}
+                      width={measuredChartWrapperWidth} // Use measured width
+                      height={250} // Fixed height for web
+                      chartConfig={{
+                        ...chartConfig,
+                        // Ensure color function is correctly defined for template literal
+                        color: (opacity = 1) => `rgba(46, 125, 50, ${opacity})`,
+                        propsForDots: {
+                          r: "5",
+                          strokeWidth: "2",
+                          stroke: COLORS.primaryDark,
+                        },
+                        strokeWidth: 3,
+                      }}
+                      bezier
+                      style={styles.chart} // Basic style, width is handled by prop
+                      yAxisSuffix=" PKR"
+                      yAxisInterval={1}
+                      fromZero={false}
+                      withDots={true}
+                      withInnerLines={true}
+                      withOuterLines={true}
+                      withVerticalLines={true}
+                      withHorizontalLines={true}
+                      withVerticalLabels={true}
+                      withHorizontalLabels={true}
+                      horizontalLabelRotation={0}
+                      decorator={() => (
                         <View style={styles.tooltipContainer}>
-                          {isWebPlatform && (
+                          {isWebPlatform && ( // This will be true for web
                             <View style={styles.tooltipHint}>
                               <Ionicons name="information-circle-outline" size={16} color={COLORS.info} />
                               <Text style={styles.tooltipHintText}>
@@ -776,28 +767,103 @@ const DashboardScreen = ({ navigation }) => {
                             </View>
                           )}
                         </View>
-                      )
-                    }}
-                    onDataPointClick={({value, index, x, y}) => {
-                      // Show tooltip with date and price
-                      if (getChartData().tooltipData && getChartData().tooltipData[index]) {
-                        const tooltipData = getChartData().tooltipData[index];
-                        alert(`${tooltipData.date}\n${tooltipData.price}`);
-                      }
-                    }}
-                  />
-                </View>
-
-                {/* Chart legend and info */}
-                <View style={styles.chartInfo}>
-                  <View style={styles.chartInfoItem}>
-                    <Ionicons name="trending-up" size={16} color={COLORS.primaryLight} />
-                    <Text style={styles.chartInfoText}>
-                      {t("dashboard.priceHistoryInfo")}
-                    </Text>
+                      )}
+                      onDataPointClick={({ value, index }) => {
+                        if (chartDisplayData.tooltipData && chartDisplayData.tooltipData[index]) {
+                          const tooltipItem = chartDisplayData.tooltipData[index];
+                          // Ensure alert message is correctly formatted
+                          alert(`\${tooltipItem.date}\\n\${tooltipItem.price}`);
+                        }
+                      }}
+                    />
+                  ) : (
+                    // Show a loader or placeholder while width is being measured
+                    <View style={{ height: 250, justifyContent: 'center', alignItems: 'center' }}>
+                      <ActivityIndicator size="large" color={COLORS.primary} />
+                    </View>
+                  )}
+                  <View style={styles.chartInfo}>
+                    <View style={styles.chartInfoItem}>
+                      <Ionicons name="trending-up" size={16} color={COLORS.primaryLight} />
+                      <Text style={styles.chartInfoText}>
+                        {t("dashboard.priceHistoryInfo")}
+                      </Text>
+                    </View>
                   </View>
                 </View>
-              </View>
+              ) : ( // Mobile platform
+                <View style={styles.chartWrapper}>
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={{ 
+                      minWidth: chartDisplayData.labels && chartDisplayData.labels.length > 0 
+                                ? Math.max(windowDimensions.width - 40, chartDisplayData.labels.length * 40) 
+                                : windowDimensions.width - 40 
+                    }}
+                    style={{ width: '100%' }}
+                  >
+                    <LineChart
+                      data={chartDisplayData}
+                      width={
+                        chartDisplayData.labels && chartDisplayData.labels.length > 0
+                          ? Math.max(windowDimensions.width - 40, chartDisplayData.labels.length * 40)
+                          : windowDimensions.width - 40
+                      }
+                      height={220} // Mobile height
+                      chartConfig={{
+                        ...chartConfig,
+                        color: (opacity = 1) => `rgba(46, 125, 50, ${opacity})`,
+                        propsForDots: {
+                          r: "5",
+                          strokeWidth: "2",
+                          stroke: COLORS.primaryDark,
+                        },
+                        strokeWidth: 3,
+                      }}
+                      bezier
+                      style={[
+                        styles.chart, 
+                        { 
+                          minWidth: chartDisplayData.labels && chartDisplayData.labels.length > 0 
+                                    ? Math.max(windowDimensions.width - 40, chartDisplayData.labels.length * 40) 
+                                    : windowDimensions.width - 40 
+                        }
+                      ]}
+                      yAxisSuffix=" PKR"
+                      yAxisInterval={1}
+                      fromZero={false}
+                      withDots={true}
+                      withInnerLines={true}
+                      withOuterLines={true}
+                      withVerticalLines={true}
+                      withHorizontalLines={true}
+                      withVerticalLabels={true}
+                      withHorizontalLabels={true}
+                      horizontalLabelRotation={30} // Mobile rotation
+                      decorator={() => (
+                        <View style={styles.tooltipContainer}>
+                          {/* Hint is not shown on mobile as isWebPlatform will be false */}
+                        </View>
+                      )}
+                      onDataPointClick={({ value, index }) => {
+                        if (chartDisplayData.tooltipData && chartDisplayData.tooltipData[index]) {
+                          const tooltipItem = chartDisplayData.tooltipData[index];
+                          alert(`\${tooltipItem.date}\\n\${tooltipItem.price}`);
+                        }
+                      }}
+                    />
+                  </ScrollView>
+                  <View style={styles.chartInfo}>
+                    <View style={styles.chartInfoItem}>
+                      <Ionicons name="trending-up" size={16} color={COLORS.primaryLight} />
+                      <Text style={styles.chartInfoText}>
+                        {t("dashboard.priceHistoryInfo")}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+              )
             ) : (
               <View style={styles.noDataContainer}>
                 <Ionicons name="analytics-outline" size={40} color={COLORS.lightGray} style={styles.noDataIcon} />
@@ -839,38 +905,38 @@ const DashboardScreen = ({ navigation }) => {
       )}
     </>
   );
+};
 
-  // Return different layouts based on platform
-  return isWebPlatform ? (
-    <WebLayout
+// Main return for DashboardScreen component
+return isWebPlatform ? (
+  <WebLayout
+    title={t("dashboard.title")}
+    currentScreen="Dashboard"
+    navigation={navigation}
+    showNotificationsButton={true}
+    onNotificationsPress={() => navigation.navigate("Notifications")}
+    fullWidth={true}
+  >
+    {renderContent()}
+  </WebLayout>
+) : (
+  <SafeAreaView style={styles.container}>
+    <Header
       title={t("dashboard.title")}
-      currentScreen="Dashboard"
-      navigation={navigation}
       showNotificationsButton={true}
       onNotificationsPress={() => navigation.navigate("Notifications")}
-      fullWidth={true}
+    />
+    <ScrollView
+      style={styles.scrollView}
+      contentContainerStyle={styles.scrollContent}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+      }
     >
       {renderContent()}
-    </WebLayout>
-  ) : (
-    <SafeAreaView style={styles.container}>
-      <Header
-        title={t("dashboard.title")}
-        showNotificationsButton={true}
-        onNotificationsPress={() => navigation.navigate("Notifications")}
-      />
-
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-      >
-        {renderContent()}
-      </ScrollView>
-    </SafeAreaView>
-  );
+    </ScrollView>
+  </SafeAreaView>
+);
 };
 
 const styles = StyleSheet.create({
@@ -1160,12 +1226,10 @@ const styles = StyleSheet.create({
       ...SHADOWS.subtle,
     } : {}),
   },
-  chart: {
-    marginVertical: SPACING.small,
+  chart: { // Simplified chart style
+    marginVertical: SPACING.medium,
     borderRadius: 16,
-    ...(Platform.OS === "web" ? {
-      minWidth: '100%',
-    } : {}),
+    // Width/minWidth is now handled dynamically by props or parent for web
   },
   chartInfo: {
     width: '100%',
