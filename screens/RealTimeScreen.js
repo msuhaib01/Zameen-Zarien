@@ -252,7 +252,10 @@ const RealTimeScreen = ({ navigation }) => {
           </View>
 
           {/* Table body */}
-          <ScrollView style={styles.tableBody}>
+          <ScrollView
+            style={styles.tableBody}
+            nestedScrollEnabled={true}
+          >
             {filteredData.map((item, index) => {
               const locObject = locations.find(locCtx => locCtx.name === item.CityName);
               const displayCityName = i18n.language === 'ur'
