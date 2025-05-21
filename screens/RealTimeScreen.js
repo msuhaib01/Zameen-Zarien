@@ -32,7 +32,7 @@ import {
 } from "../services/cropPricesService";
 
 const RealTimeScreen = ({ navigation }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation(); // Ensure i18n is destructured
   const { commodities, locations } = useApp();
   const windowDimensions = useWindowDimensions();
   const [isWebPlatform] = useState(Platform.OS === "web");
@@ -49,18 +49,30 @@ const RealTimeScreen = ({ navigation }) => {
   // Location and commodity filter options
   const locationOptions = [
     { label: t("common.allLocations"), value: "all" },
-    ...uniqueLocations.map((location) => ({
-      label: location,
-      value: location,
-    })),
+    ...uniqueLocations.map((locationName) => {
+      const locObject = locations.find(locCtx => locCtx.name === locationName);
+      const label = i18n.language === 'ur'
+        ? (locObject?.name_ur || locationName)
+        : (locObject?.name || locationName);
+      return {
+        label: label,
+        value: locationName,
+      };
+    }),
   ];
 
   const commodityOptions = [
     { label: t("common.allCommodities"), value: "all" },
-    ...uniqueCommodities.map((commodity) => ({
-      label: commodity,
-      value: commodity,
-    })),
+    ...uniqueCommodities.map((commodityName) => {
+      const comObject = commodities.find(comCtx => comCtx.name === commodityName);
+      const label = i18n.language === 'ur'
+        ? (comObject?.name_ur || commodityName)
+        : (comObject?.name || commodityName);
+      return {
+        label: label,
+        value: commodityName,
+      };
+    }),
   ];
 
   // Load real-time data when component mounts
@@ -241,37 +253,49 @@ const RealTimeScreen = ({ navigation }) => {
 
           {/* Table body */}
           <ScrollView style={styles.tableBody}>
-            {filteredData.map((item, index) => (
-              <View key={index} style={styles.tableRow}>
-                <Text
-                  style={[styles.tableCell, styles.locationCell]}
-                  numberOfLines={1}
-                >
-                  {item.CityName}
-                </Text>
-                <Text
-                  style={[styles.tableCell, styles.commodityCell]}
-                  numberOfLines={1}
-                >
-                  {item.CropName}
-                </Text>
-                <Text style={[styles.tableCell, styles.priceCell]}>
-                  {item["Today's FQP/Average Price"]}
-                </Text>
-                <Text style={[styles.tableCell, styles.priceCell]}>
-                  {item["Yesterday's FQP/Average Price"]}
-                </Text>
-                <Text
-                  style={[
-                    styles.tableCell,
-                    styles.changeCell,
-                    getPriceChangeClass(item["Change in Price"]),
-                  ]}
-                >
-                  {item["Change in Price"]}
-                </Text>
-              </View>
-            ))}
+            {filteredData.map((item, index) => {
+              const locObject = locations.find(locCtx => locCtx.name === item.CityName);
+              const displayCityName = i18n.language === 'ur'
+                ? (locObject?.name_ur || item.CityName)
+                : (locObject?.name || item.CityName);
+
+              const comObject = commodities.find(comCtx => comCtx.name === item.CropName);
+              const displayCropName = i18n.language === 'ur'
+                ? (comObject?.name_ur || item.CropName)
+                : (comObject?.name || item.CropName);
+
+              return (
+                <View key={index} style={styles.tableRow}>
+                  <Text
+                    style={[styles.tableCell, styles.locationCell]}
+                    numberOfLines={1}
+                  >
+                    {displayCityName}
+                  </Text>
+                  <Text
+                    style={[styles.tableCell, styles.commodityCell]}
+                    numberOfLines={1}
+                  >
+                    {displayCropName}
+                  </Text>
+                  <Text style={[styles.tableCell, styles.priceCell]}>
+                    {item["Today's FQP/Average Price"]}
+                  </Text>
+                  <Text style={[styles.tableCell, styles.priceCell]}>
+                    {item["Yesterday's FQP/Average Price"]}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.tableCell,
+                      styles.changeCell,
+                      getPriceChangeClass(item["Change in Price"]),
+                    ]}
+                  >
+                    {item["Change in Price"]}
+                  </Text>
+                </View>
+              );
+            })}
           </ScrollView>
         </Card>
       )}
