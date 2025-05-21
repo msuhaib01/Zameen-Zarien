@@ -86,11 +86,11 @@ export const getPriceHistory = async (
     const formattedStartDate =
       typeof startDate === "string"
         ? startDate
-        : startDate.toISOString().split("T")[0];
+        : formatDateObjectToYYYYMMDD(startDate);
     const formattedEndDate =
       typeof endDate === "string"
         ? endDate
-        : endDate.toISOString().split("T")[0];
+        : formatDateObjectToYYYYMMDD(endDate);
 
     const params = {
       commodity,
@@ -199,11 +199,11 @@ export const getModelPrediction = async (
       const formattedStartDate =
         typeof startDate === "string"
           ? startDate
-          : startDate.toISOString().split("T")[0];
+          : formatDateObjectToYYYYMMDD(startDate); // Use helper here
       const formattedEndDate =
         typeof endDate === "string"
           ? endDate
-          : endDate.toISOString().split("T")[0];
+          : formatDateObjectToYYYYMMDD(endDate); // Use helper here
 
       params.start_date = formattedStartDate;
       params.end_date = formattedEndDate;
@@ -321,4 +321,14 @@ export const getRealTimeData = async (commodity = null, location = null) => {
       throw error;
     }
   }
+};
+
+// Helper function to format a Date object to YYYY-MM-DD string
+// without timezone conversion issues from toISOString()
+// This function can be moved to a utility file if used elsewhere
+const formatDateObjectToYYYYMMDD = (date) => {
+  const year = date.getFullYear();
+  const month = (date.getMonth() + 1).toString().padStart(2, '0');
+  const day = date.getDate().toString().padStart(2, '0');
+  return `${year}-${month}-${day}`;
 };
