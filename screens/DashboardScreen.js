@@ -784,7 +784,8 @@ const DashboardScreen = ({ navigation }) => {
                       withInnerLines={true}
                       withOuterLines={true}
                       withVerticalLines={true}
-                      withHorizontalLines={true}                      withVerticalLabels={true}
+                      withHorizontalLines={true}
+                      withVerticalLabels={true}
                       withHorizontalLabels={true}
                       horizontalLabelRotation={0}
                       paddingLeft={80} // Added explicit padding to prevent digit cutoff
@@ -799,12 +800,11 @@ const DashboardScreen = ({ navigation }) => {
                             </View>
                           )}
                         </View>
-                      )}
-                      onDataPointClick={({ value, index }) => {
+                      )}                      onDataPointClick={({ value, index }) => {
                         if (chartDisplayData.tooltipData && chartDisplayData.tooltipData[index]) {
                           const tooltipItem = chartDisplayData.tooltipData[index];
-                          // Ensure alert message is correctly formatted
-                          alert(`\${tooltipItem.date}\\n\${tooltipItem.price}`);
+                          // Ensure alert message is correctly formatted without newlines
+                          alert(`${tooltipItem.date} - ${tooltipItem.price}`);
                         }
                       }}
                     />
@@ -870,18 +870,18 @@ const DashboardScreen = ({ navigation }) => {
                       withVerticalLines={true}
                       yLabelsOffset={10} // Add offset to y-axis labels to prevent first digit cutoff
                       withHorizontalLines={true}
-                      withVerticalLabels={true}                      withHorizontalLabels={true}
+                      withVerticalLabels={true}
+                      withHorizontalLabels={true}
                       horizontalLabelRotation={30} // Mobile rotation
                       paddingLeft={40} // Added explicit padding to prevent digit cutoff
                       decorator={() => (
                         <View style={styles.tooltipContainer}>
                           {/* Hint is not shown on mobile as isWebPlatform will be false */}
                         </View>
-                      )}
-                      onDataPointClick={({ value, index }) => {
+                      )}                      onDataPointClick={({ value, index }) => {
                         if (chartDisplayData.tooltipData && chartDisplayData.tooltipData[index]) {
                           const tooltipItem = chartDisplayData.tooltipData[index];
-                          alert(`\${tooltipItem.date}\\n\${tooltipItem.price}`);
+                          alert(`${tooltipItem.date} - ${tooltipItem.price}`);
                         }
                       }}
                     />

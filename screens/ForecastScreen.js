@@ -740,9 +740,9 @@ const ForecastScreen = ({ navigation }) => {
                       withDots={true}
                       withInnerLines={true}
                       withOuterLines={true}
-                      withVerticalLines={true}
-                      withHorizontalLines={true}
-                      withVerticalLabels={true}                      withHorizontalLabels={true}
+                      withVerticalLines={true}                      withHorizontalLines={true}
+                      withVerticalLabels={true}
+                      withHorizontalLabels={true}
                       horizontalLabelRotation={0}
                       paddingLeft={80} // Increased padding to fix cut-off issue with digits
                       yLabelsOffset={10} // Add offset to y-axis labels to prevent first digit cutoff
@@ -757,12 +757,11 @@ const ForecastScreen = ({ navigation }) => {
                             </View>
                           )}
                         </View>
-                      )}
-                      onDataPointClick={({ value, index }) => {
+                      )}                      onDataPointClick={({ value, index }) => {
                         if (chartDisplayData.tooltipData && chartDisplayData.tooltipData[index]) {
                           const tooltipItem = chartDisplayData.tooltipData[index];
-                          // Show tooltip data in alert
-                          alert(`${tooltipItem.date}\n${tooltipItem.price}`);
+                          // Show tooltip data in alert - avoid newline character
+                          alert(`${tooltipItem.date} - ${tooltipItem.price}`);
                         }
                       }}
                     />
@@ -821,14 +820,13 @@ const ForecastScreen = ({ navigation }) => {
                       withOuterLines={true}
                       withVerticalLines={true}
                       withHorizontalLines={true}
-                      withVerticalLabels={true}                      withHorizontalLabels={true}
-                      horizontalLabelRotation={30} // Mobile rotation
+                      withVerticalLabels={true}                      withHorizontalLabels={true}                      horizontalLabelRotation={30} // Mobile rotation
                       paddingLeft={40} // Added left padding for mobile to prevent digit cutoff
                       yLabelsOffset={10} // Add offset to y-axis labels to prevent first digit cutoff
                       onDataPointClick={({ value, index }) => {
                         if (chartDisplayData.tooltipData && chartDisplayData.tooltipData[index]) {
                           const tooltipItem = chartDisplayData.tooltipData[index];
-                          alert(`${tooltipItem.date}\n${tooltipItem.price}`);
+                          alert(`${tooltipItem.date} - ${tooltipItem.price}`);
                         }
                       }}
                     />
@@ -1138,11 +1136,10 @@ const ForecastScreen = ({ navigation }) => {
                       withHorizontalLines={true}
                       withVerticalLabels={true}
                       withHorizontalLabels={true}
-                      horizontalLabelRotation={30}
-                      onDataPointClick={({ value, index }) => {
+                      horizontalLabelRotation={30}                      onDataPointClick={({ value, index }) => {
                         if (chartDisplayData.tooltipData && chartDisplayData.tooltipData[index]) {
                           const tooltipItem = chartDisplayData.tooltipData[index];
-                          alert(`${tooltipItem.date}\n${tooltipItem.price}`);
+                          alert(`${tooltipItem.date} - ${tooltipItem.price}`);
                         }
                       }}
                     />
