@@ -55,6 +55,7 @@ const enTranslations = {
     month: "Month",
     year: "Year",
     priceHistory: "Price History",
+    priceHistoryInfo: "Price trend over the selected time period",
   },
   forecast: {
     title: "Price Forecast",
@@ -329,6 +330,7 @@ const urTranslations = {
     month: "مہینہ",
     year: "سال",
     priceHistory: "قیمت کی تاریخ",
+    priceHistoryInfo: "منتخب کردہ مدت کے دوران قیمت کا رجحان",
   },
   forecast: {
     title: "قیمت پیشگوئی",

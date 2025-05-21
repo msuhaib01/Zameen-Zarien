@@ -883,6 +883,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: SPACING.large,
+    ...(Platform.OS !== "web" ? { paddingBottom: 100 } : {}), // Add extra bottom padding for mobile
   },
   notificationButton: {
     padding: SPACING.small,
