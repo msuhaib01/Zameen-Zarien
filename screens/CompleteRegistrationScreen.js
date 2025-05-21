@@ -20,10 +20,12 @@ import Header from "../components/Header";
 import Input from "../components/Input";
 import Button from "../components/Button";
 import Card from "../components/Card";
+import AuthWebLayout from "../components/AuthWebLayout";
 import { COLORS, FONT, SPACING, SHADOWS } from "../theme";
 
 const screenWidth = Dimensions.get("window").width;
 const isSmallScreen = screenWidth < 360;
+const isWebPlatform = Platform.OS === "web";
 
 const CompleteRegistrationScreen = ({ route, navigation }) => {
   const { t } = useTranslation();
@@ -96,6 +98,90 @@ const CompleteRegistrationScreen = ({ route, navigation }) => {
     }
   };
 
+  // Content to be rendered for both mobile and web
+  const renderContent = () => (
+    <Card style={styles.formCard}>
+      <View style={styles.formContent}>
+        <Text style={styles.title}>Complete Your Registration</Text>
+        <Text style={styles.subtitle}>
+          Enter the verification code sent to your phone and fill in your
+          details
+        </Text>
+
+        {error ? <Text style={styles.errorText}>{error}</Text> : null}
+
+        <Input
+          label="Verification Code"
+          value={code}
+          onChangeText={setCode}
+          placeholder="Enter the 4-digit code"
+          keyboardType="number-pad"
+          maxLength={4}
+        />
+
+        <Input
+          label="Full Name"
+          value={fullName}
+          onChangeText={setFullName}
+          placeholder="Enter your full name"
+          autoCapitalize="words"
+        />
+
+        <Input
+          label="Email"
+          value={email}
+          onChangeText={setEmail}
+          placeholder="Enter your email"
+          keyboardType="email-address"
+          autoCapitalize="none"
+        />
+
+        <View style={styles.passwordContainer}>
+          <Input
+            label="Password"
+            value={password}
+            onChangeText={setPassword}
+            placeholder="Create a password"
+            secureTextEntry={!showPassword}
+            style={styles.passwordInput}
+          />
+          <TouchableOpacity
+            style={styles.eyeIcon}
+            onPress={() => setShowPassword(!showPassword)}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Ionicons
+              name={showPassword ? "eye-off-outline" : "eye-outline"}
+              size={24}
+              color={COLORS.gray}
+            />
+          </TouchableOpacity>
+        </View>
+
+        <Button
+          title="Create Account"
+          onPress={handleCompleteRegistration}
+          loading={loading}
+          style={styles.button}
+          size="large"
+        />
+      </View>
+    </Card>
+  );
+
+  // Return different layouts based on platform
+  if (isWebPlatform) {
+    return (
+      <AuthWebLayout
+        title={t("auth.completeRegistration")}
+        showBackButton={true}
+        onBackPress={() => navigation.goBack()}
+      >
+        {renderContent()}
+      </AuthWebLayout>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar backgroundColor={COLORS.primary} barStyle="light-content" />
@@ -115,73 +201,7 @@ const CompleteRegistrationScreen = ({ route, navigation }) => {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <Card style={styles.formCard}>
-            <View style={styles.formContent}>
-              <Text style={styles.title}>Complete Your Registration</Text>
-              <Text style={styles.subtitle}>
-                Enter the verification code sent to your phone and fill in your
-                details
-              </Text>
-
-              {error ? <Text style={styles.errorText}>{error}</Text> : null}
-
-              <Input
-                label="Verification Code"
-                value={code}
-                onChangeText={setCode}
-                placeholder="Enter the 4-digit code"
-                keyboardType="number-pad"
-                maxLength={4}
-              />
-
-              <Input
-                label="Full Name"
-                value={fullName}
-                onChangeText={setFullName}
-                placeholder="Enter your full name"
-                autoCapitalize="words"
-              />
-
-              <Input
-                label="Email"
-                value={email}
-                onChangeText={setEmail}
-                placeholder="Enter your email"
-                keyboardType="email-address"
-                autoCapitalize="none"
-              />
-
-              <View style={styles.passwordContainer}>
-                <Input
-                  label="Password"
-                  value={password}
-                  onChangeText={setPassword}
-                  placeholder="Create a password"
-                  secureTextEntry={!showPassword}
-                  style={styles.passwordInput}
-                />
-                <TouchableOpacity
-                  style={styles.eyeIcon}
-                  onPress={() => setShowPassword(!showPassword)}
-                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                >
-                  <Ionicons
-                    name={showPassword ? "eye-off-outline" : "eye-outline"}
-                    size={24}
-                    color={COLORS.gray}
-                  />
-                </TouchableOpacity>
-              </View>
-
-              <Button
-                title="Create Account"
-                onPress={handleCompleteRegistration}
-                loading={loading}
-                style={styles.button}
-                size="large"
-              />
-            </View>
-          </Card>
+          {renderContent()}
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>

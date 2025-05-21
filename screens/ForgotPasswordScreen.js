@@ -21,10 +21,12 @@ import Header from "../components/Header"
 import Input from "../components/Input"
 import Button from "../components/Button"
 import Card from "../components/Card"
+import AuthWebLayout from "../components/AuthWebLayout"
 import { COLORS, FONT, SPACING, SHADOWS } from "../theme"
 
 const screenWidth = Dimensions.get('window').width;
 const isSmallScreen = screenWidth < 360;
+const isWebPlatform = Platform.OS === "web";
 
 const ForgotPasswordScreen = ({ navigation }) => {
   const { t } = useTranslation()
@@ -63,6 +65,56 @@ const ForgotPasswordScreen = ({ navigation }) => {
       setLoading(false)
     }
   }
+  
+  // Content to be rendered for both mobile and web
+  const renderContent = () => (
+    <Card style={styles.formCard}>
+      <View style={styles.formContent}>
+        <Text style={styles.title}>{t("auth.forgotPassword")}</Text>
+        <Text style={styles.subtitle}>{t("auth.forgotPasswordInstructions")}</Text>
+
+        {error ? <Text style={styles.errorText}>{error}</Text> : null}
+
+        <Input
+          label={t("common.mobileNumber")}
+          value={phoneNumber}
+          onChangeText={setPhoneNumber}
+          placeholder="03xx xxx xxxx"
+          keyboardType="phone-pad"
+          autoCapitalize="none"
+        />
+
+        <Button
+          title={t("auth.resetPassword")}
+          onPress={handleResetPassword}
+          loading={loading}
+          style={styles.resetButton}
+          size="large"
+        />
+
+        <TouchableOpacity 
+          style={styles.backToLoginButton} 
+          onPress={() => navigation.navigate("Login")}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
+          <Text style={styles.backToLoginText}>{t("auth.backToLogin")}</Text>
+        </TouchableOpacity>
+      </View>
+    </Card>
+  );
+
+  // Return different layouts based on platform
+  if (isWebPlatform) {
+    return (
+      <AuthWebLayout
+        title={t("common.appName")} 
+        showBackButton={true} 
+        onBackPress={() => navigation.goBack()}
+      >
+        {renderContent()}
+      </AuthWebLayout>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -83,39 +135,7 @@ const ForgotPasswordScreen = ({ navigation }) => {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <Card style={styles.formCard}>
-            <View style={styles.formContent}>
-              <Text style={styles.title}>{t("auth.forgotPassword")}</Text>
-              <Text style={styles.subtitle}>{t("auth.forgotPasswordInstructions")}</Text>
-
-              {error ? <Text style={styles.errorText}>{error}</Text> : null}
-
-              <Input
-                label={t("common.mobileNumber")}
-                value={phoneNumber}
-                onChangeText={setPhoneNumber}
-                placeholder="03xx xxx xxxx"
-                keyboardType="phone-pad"
-                autoCapitalize="none"
-              />
-
-              <Button
-                title={t("auth.resetPassword")}
-                onPress={handleResetPassword}
-                loading={loading}
-                style={styles.resetButton}
-                size="large"
-              />
-
-              <TouchableOpacity 
-                style={styles.backToLoginButton} 
-                onPress={() => navigation.navigate("Login")}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              >
-                <Text style={styles.backToLoginText}>{t("auth.backToLogin")}</Text>
-              </TouchableOpacity>
-            </View>
-          </Card>
+          {renderContent()}
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>

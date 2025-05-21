@@ -21,11 +21,13 @@ import Header from "../components/Header";
 import Input from "../components/Input";
 import Button from "../components/Button";
 import Card from "../components/Card";
+import AuthWebLayout from "../components/AuthWebLayout";
 import { COLORS, FONT, SPACING, SHADOWS } from "../theme";
 import { useApp } from "../context/AppContext";
 
 const screenWidth = Dimensions.get("window").width;
 const isSmallScreen = screenWidth < 360;
+const isWebPlatform = Platform.OS === "web";
 
 const LoginScreen = ({ navigation }) => {
   const { t, i18n } = useTranslation();
@@ -75,6 +77,111 @@ const LoginScreen = ({ navigation }) => {
     </TouchableOpacity>
   );
 
+  // Content to be rendered for both mobile and web
+  const renderContent = () => (
+    <>
+      <View style={styles.logoContainer}>
+        <Image
+          source={require("../assets/logo-placeholder.png")}
+          style={styles.logo}
+          resizeMode="contain"
+        />
+      </View>
+
+      <Card style={styles.formCard}>
+        <View style={styles.formContent}>
+          <Text style={styles.title}>{t("auth.loginTitle")}</Text>
+
+          {error ? <Text style={styles.errorText}>{error}</Text> : null}
+
+          <Input
+            label={t("common.mobileNumber")}
+            value={phoneNumber}
+            onChangeText={setPhoneNumber}
+            placeholder="03xx xxx xxxx"
+            keyboardType="phone-pad"
+            autoCapitalize="none"
+          />
+
+          <View style={styles.passwordContainer}>
+            <Input
+              label={t("common.password")}
+              value={password}
+              onChangeText={setPassword}
+              placeholder="********"
+              secureTextEntry={!showPassword}
+              style={styles.passwordInput}
+            />
+            <TouchableOpacity
+              style={styles.eyeIcon}
+              onPress={() => setShowPassword(!showPassword)}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Ionicons
+                name={showPassword ? "eye-off-outline" : "eye-outline"}
+                size={24}
+                color={COLORS.gray}
+              />
+            </TouchableOpacity>
+          </View>
+
+          <TouchableOpacity
+            style={styles.forgotPassword}
+            onPress={() => navigation.navigate("ForgotPassword")}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Text style={styles.forgotPasswordText}>
+              {t("auth.forgotPassword")}
+            </Text>
+          </TouchableOpacity>
+
+          <Button
+            title={t("common.login")}
+            onPress={handleLogin}
+            loading={loading}
+            style={styles.loginButton}
+            size="large"
+          />
+
+          <View style={styles.registerContainer}>
+            <Text style={styles.registerText}>{t("auth.noAccount")}</Text>
+            <TouchableOpacity
+              onPress={() => navigation.navigate("PhoneVerification")}
+              hitSlop={{ top: 10, bottom: 10, left: 5, right: 5 }}
+            >
+              <Text style={styles.registerLink}>
+                {t("common.register")}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Card>
+
+      <TouchableOpacity
+        style={styles.supportButton}
+        onPress={() => {
+          /* Handle support action */
+        }}
+        hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
+      >
+        <Text style={styles.supportText}>{t("common.contactSupport")}</Text>
+      </TouchableOpacity>
+    </>
+  );
+
+  // Return different layouts based on platform
+  if (isWebPlatform) {
+    return (
+      <AuthWebLayout
+        title={t("common.appName")}
+        showBackButton={false}
+        rightComponent={<HeaderRight />}
+      >
+        {renderContent()}
+      </AuthWebLayout>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar backgroundColor={COLORS.primary} barStyle="light-content" />
@@ -94,92 +201,7 @@ const LoginScreen = ({ navigation }) => {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <View style={styles.logoContainer}>
-            <Image
-              source={require("../assets/logo-placeholder.png")}
-              style={styles.logo}
-              resizeMode="contain"
-            />
-          </View>
-
-          <Card style={styles.formCard}>
-            <View style={styles.formContent}>
-              <Text style={styles.title}>{t("auth.loginTitle")}</Text>
-
-              {error ? <Text style={styles.errorText}>{error}</Text> : null}
-
-              <Input
-                label={t("common.mobileNumber")}
-                value={phoneNumber}
-                onChangeText={setPhoneNumber}
-                placeholder="03xx xxx xxxx"
-                keyboardType="phone-pad"
-                autoCapitalize="none"
-              />
-
-              <View style={styles.passwordContainer}>
-                <Input
-                  label={t("common.password")}
-                  value={password}
-                  onChangeText={setPassword}
-                  placeholder="********"
-                  secureTextEntry={!showPassword}
-                  style={styles.passwordInput}
-                />
-                <TouchableOpacity
-                  style={styles.eyeIcon}
-                  onPress={() => setShowPassword(!showPassword)}
-                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                >
-                  <Ionicons
-                    name={showPassword ? "eye-off-outline" : "eye-outline"}
-                    size={24}
-                    color={COLORS.gray}
-                  />
-                </TouchableOpacity>
-              </View>
-
-              <TouchableOpacity
-                style={styles.forgotPassword}
-                onPress={() => navigation.navigate("ForgotPassword")}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              >
-                <Text style={styles.forgotPasswordText}>
-                  {t("auth.forgotPassword")}
-                </Text>
-              </TouchableOpacity>
-
-              <Button
-                title={t("common.login")}
-                onPress={handleLogin}
-                loading={loading}
-                style={styles.loginButton}
-                size="large"
-              />
-
-              <View style={styles.registerContainer}>
-                <Text style={styles.registerText}>{t("auth.noAccount")}</Text>
-                <TouchableOpacity
-                  onPress={() => navigation.navigate("PhoneVerification")}
-                  hitSlop={{ top: 10, bottom: 10, left: 5, right: 5 }}
-                >
-                  <Text style={styles.registerLink}>
-                    {t("common.register")}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </Card>
-
-          <TouchableOpacity
-            style={styles.supportButton}
-            onPress={() => {
-              /* Handle support action */
-            }}
-            hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
-          >
-            <Text style={styles.supportText}>{t("common.contactSupport")}</Text>
-          </TouchableOpacity>
+          {renderContent()}
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>

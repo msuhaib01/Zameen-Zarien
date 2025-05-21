@@ -21,10 +21,12 @@ import Header from "../components/Header";
 import Input from "../components/Input";
 import Button from "../components/Button";
 import Card from "../components/Card";
+import AuthWebLayout from "../components/AuthWebLayout";
 import { COLORS, FONT, SPACING, SHADOWS } from "../theme";
 
 const screenWidth = Dimensions.get("window").width;
 const isSmallScreen = screenWidth < 360;
+const isWebPlatform = Platform.OS === "web";
 
 const PhoneVerificationScreen = ({ navigation }) => {
   const { t } = useTranslation();
@@ -73,6 +75,50 @@ const PhoneVerificationScreen = ({ navigation }) => {
     }
   };
 
+  // Content to be rendered for both mobile and web
+  const renderContent = () => (
+    <Card style={styles.formCard}>
+      <View style={styles.formContent}>
+        <Text style={styles.title}>Enter Your Phone Number</Text>
+        <Text style={styles.subtitle}>
+          We'll send you a verification code to complete your registration
+        </Text>
+
+        {error ? <Text style={styles.errorText}>{error}</Text> : null}
+
+        <Input
+          label="Phone Number"
+          value={phoneNumber}
+          onChangeText={setPhoneNumber}
+          placeholder="Enter your phone number"
+          keyboardType="phone-pad"
+          autoCapitalize="none"
+        />
+
+        <Button
+          title="Send Verification Code"
+          onPress={handleSendCode}
+          loading={loading}
+          style={styles.button}
+          size="large"
+        />
+      </View>
+    </Card>
+  );
+
+  // Return different layouts based on platform
+  if (isWebPlatform) {
+    return (
+      <AuthWebLayout
+        title={t("auth.registerTitle")}
+        showBackButton={true}
+        onBackPress={() => navigation.goBack()}
+      >
+        {renderContent()}
+      </AuthWebLayout>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar backgroundColor={COLORS.primary} barStyle="light-content" />
@@ -92,33 +138,7 @@ const PhoneVerificationScreen = ({ navigation }) => {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <Card style={styles.formCard}>
-            <View style={styles.formContent}>
-              <Text style={styles.title}>Enter Your Phone Number</Text>
-              <Text style={styles.subtitle}>
-                We'll send you a verification code to complete your registration
-              </Text>
-
-              {error ? <Text style={styles.errorText}>{error}</Text> : null}
-
-              <Input
-                label="Phone Number"
-                value={phoneNumber}
-                onChangeText={setPhoneNumber}
-                placeholder="Enter your phone number"
-                keyboardType="phone-pad"
-                autoCapitalize="none"
-              />
-
-              <Button
-                title="Send Verification Code"
-                onPress={handleSendCode}
-                loading={loading}
-                style={styles.button}
-                size="large"
-              />
-            </View>
-          </Card>
+          {renderContent()}
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>

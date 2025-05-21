@@ -23,11 +23,13 @@ import Input from "../components/Input"
 import Button from "../components/Button"
 import Dropdown from "../components/Dropdown"
 import Card from "../components/Card"
+import AuthWebLayout from "../components/AuthWebLayout"
 import { COLORS, FONT, SPACING, SHADOWS } from "../theme"
 import { useApp } from "../context/AppContext"
 
 const screenWidth = Dimensions.get('window').width;
 const isSmallScreen = screenWidth < 360;
+const isWebPlatform = Platform.OS === "web";
 
 const RegisterScreen = ({ navigation }) => {
   const { t, i18n } = useTranslation()
@@ -168,6 +170,158 @@ const RegisterScreen = ({ navigation }) => {
       <Text style={styles.languageText}>{i18n.language === "en" ? "اردو" : "English"}</Text>
     </TouchableOpacity>
   );
+  
+  // Content to be rendered for both mobile and web
+  const renderContent = () => (
+    <>
+      <View style={styles.logoContainer}>
+        <Image source={require("../assets/logo-placeholder.png")} style={styles.logo} resizeMode="contain" />
+      </View>
+
+      <Card style={styles.formCard}>
+        <View style={styles.formContent}>
+          <Text style={styles.title}>{t("auth.registerTitle")}</Text>
+
+          <Input
+            label={t("auth.fullName")}
+            value={name}
+            onChangeText={setName}
+            placeholder={t("auth.fullNamePlaceholder")}
+            error={errors.name}
+            autoCapitalize="words"
+          />
+
+          <Input
+            label={t("common.mobileNumber")}
+            value={phoneNumber}
+            onChangeText={setPhoneNumber}
+            placeholder="03xx xxx xxxx"
+            keyboardType="phone-pad"
+            error={errors.phoneNumber}
+            autoCapitalize="none"
+          />
+
+          <Input
+            label={t("common.email")}
+            value={email}
+            onChangeText={setEmail}
+            placeholder="example@email.com"
+            keyboardType="email-address"
+            error={errors.email}
+            autoCapitalize="none"
+          />
+
+          <View style={styles.passwordContainer}>
+            <Input
+              label={t("common.password")}
+              value={password}
+              onChangeText={setPassword}
+              placeholder="********"
+              secureTextEntry={!showPassword}
+              error={errors.password}
+              style={styles.passwordInput}
+            />
+            <TouchableOpacity
+              style={styles.eyeIcon}
+              onPress={() => setShowPassword(!showPassword)}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Ionicons
+                name={showPassword ? "eye-off-outline" : "eye-outline"}
+                size={24}
+                color={COLORS.gray}
+              />
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.passwordContainer}>
+            <Input
+              label={t("auth.confirmPassword")}
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+              placeholder="********"
+              secureTextEntry={!showConfirmPassword}
+              error={errors.confirmPassword}
+              style={styles.passwordInput}
+            />
+            <TouchableOpacity
+              style={styles.eyeIcon}
+              onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Ionicons
+                name={showConfirmPassword ? "eye-off-outline" : "eye-outline"}
+                size={24}
+                color={COLORS.gray}
+              />
+            </TouchableOpacity>
+          </View>
+
+          <Dropdown
+            label={t("auth.preferredCommodity")}
+            data={commodityOptions}
+            value={preferredCommodity}
+            onSelect={setPreferredCommodity}
+            placeholder={t("alerts.selectCommodity")}
+          />
+
+          <View style={styles.termsContainer}>
+            <TouchableOpacity
+              style={styles.checkbox}
+              onPress={() => setAgreeToTerms(!agreeToTerms)}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Ionicons name={agreeToTerms ? "checkbox" : "square-outline"} size={24} color={COLORS.primary} />
+            </TouchableOpacity>
+            <View style={styles.termsTextContainer}>
+              <Text style={styles.termsText}>{t("auth.agreeToTerms")} </Text>
+              <TouchableOpacity
+                onPress={() => {
+                  /* Navigate to terms and conditions */
+                }}
+                hitSlop={{ top: 10, bottom: 10, left: 5, right: 5 }}
+              >
+                <Text style={styles.termsLink}>{t("common.termsAndConditions")}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+          {errors.terms ? <Text style={styles.termsError}>{errors.terms}</Text> : null}
+
+          <Button
+            title={t("common.register")}
+            onPress={handleRegister}
+            loading={loading}
+            style={styles.registerButton}
+            size="large"
+          />
+
+          <View style={styles.loginContainer}>
+            <Text style={styles.loginText}>{t("auth.alreadyHaveAccount")}</Text>
+            <TouchableOpacity
+              onPress={() => navigation.navigate("Login")}
+              hitSlop={{ top: 10, bottom: 10, left: 5, right: 5 }}
+            >
+              <Text style={styles.loginLink}>{t("common.login")}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Card>
+    </>
+  );
+
+  // Return different layouts based on platform
+  if (isWebPlatform) {
+    return (
+      <AuthWebLayout
+        title={t("common.appName")}
+        showBackButton={true}
+        onBackPress={() => navigation.goBack()}
+        rightComponent={<HeaderRight />}
+      >
+        {renderContent()}
+      </AuthWebLayout>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -189,138 +343,7 @@ const RegisterScreen = ({ navigation }) => {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <View style={styles.logoContainer}>
-            <Image source={require("../assets/logo-placeholder.png")} style={styles.logo} resizeMode="contain" />
-          </View>
-
-          <Card style={styles.formCard}>
-            <View style={styles.formContent}>
-              <Text style={styles.title}>{t("auth.registerTitle")}</Text>
-
-              <Input
-                label={t("auth.fullName")}
-                value={name}
-                onChangeText={setName}
-                placeholder={t("auth.fullNamePlaceholder")}
-                error={errors.name}
-                autoCapitalize="words"
-              />
-
-              <Input
-                label={t("common.mobileNumber")}
-                value={phoneNumber}
-                onChangeText={setPhoneNumber}
-                placeholder="03xx xxx xxxx"
-                keyboardType="phone-pad"
-                error={errors.phoneNumber}
-                autoCapitalize="none"
-              />
-
-              <Input
-                label={t("common.email")}
-                value={email}
-                onChangeText={setEmail}
-                placeholder="example@email.com"
-                keyboardType="email-address"
-                error={errors.email}
-                autoCapitalize="none"
-              />
-
-              <View style={styles.passwordContainer}>
-                <Input
-                  label={t("common.password")}
-                  value={password}
-                  onChangeText={setPassword}
-                  placeholder="********"
-                  secureTextEntry={!showPassword}
-                  error={errors.password}
-                  style={styles.passwordInput}
-                />
-                <TouchableOpacity
-                  style={styles.eyeIcon}
-                  onPress={() => setShowPassword(!showPassword)}
-                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                >
-                  <Ionicons
-                    name={showPassword ? "eye-off-outline" : "eye-outline"}
-                    size={24}
-                    color={COLORS.gray}
-                  />
-                </TouchableOpacity>
-              </View>
-
-              <View style={styles.passwordContainer}>
-                <Input
-                  label={t("auth.confirmPassword")}
-                  value={confirmPassword}
-                  onChangeText={setConfirmPassword}
-                  placeholder="********"
-                  secureTextEntry={!showConfirmPassword}
-                  error={errors.confirmPassword}
-                  style={styles.passwordInput}
-                />
-                <TouchableOpacity
-                  style={styles.eyeIcon}
-                  onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                >
-                  <Ionicons
-                    name={showConfirmPassword ? "eye-off-outline" : "eye-outline"}
-                    size={24}
-                    color={COLORS.gray}
-                  />
-                </TouchableOpacity>
-              </View>
-
-              <Dropdown
-                label={t("auth.preferredCommodity")}
-                data={commodityOptions}
-                value={preferredCommodity}
-                onSelect={setPreferredCommodity}
-                placeholder={t("alerts.selectCommodity")}
-              />
-
-              <View style={styles.termsContainer}>
-                <TouchableOpacity
-                  style={styles.checkbox}
-                  onPress={() => setAgreeToTerms(!agreeToTerms)}
-                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                >
-                  <Ionicons name={agreeToTerms ? "checkbox" : "square-outline"} size={24} color={COLORS.primary} />
-                </TouchableOpacity>
-                <View style={styles.termsTextContainer}>
-                  <Text style={styles.termsText}>{t("auth.agreeToTerms")} </Text>
-                  <TouchableOpacity
-                    onPress={() => {
-                      /* Navigate to terms and conditions */
-                    }}
-                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                  >
-                    <Text style={styles.termsLink}>{t("common.termsAndConditions")}</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-              {errors.terms ? <Text style={styles.termsError}>{errors.terms}</Text> : null}
-
-              <Button
-                title={t("common.register")}
-                onPress={handleRegister}
-                loading={loading}
-                style={styles.registerButton}
-                size="large"
-              />
-
-              <View style={styles.loginContainer}>
-                <Text style={styles.loginText}>{t("auth.alreadyHaveAccount")}</Text>
-                <TouchableOpacity
-                  onPress={() => navigation.navigate("Login")}
-                  hitSlop={{ top: 10, bottom: 10, left: 5, right: 5 }}
-                >
-                  <Text style={styles.loginLink}>{t("common.login")}</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </Card>
+          {renderContent()}
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
